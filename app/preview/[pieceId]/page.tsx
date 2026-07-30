@@ -27,6 +27,7 @@ import { propertyTextBundleToPieceTexts } from "@/niches/inmobiliaria/piece-text
 import { applyHeadlineOverride } from "@/niches/inmobiliaria/apply-text-override";
 import { demoPropertyPayload } from "@/tests/fixtures/demo-property";
 import { generatePropertyTexts } from "@/lib/text-engine";
+import { verifyPreviewToken } from "@/lib/render-access/preview-token";
 import { prisma } from "@/lib/prisma";
 
 // Lee de Prisma / genera QR en cada request — nunca cacheable ni prerenderable.
@@ -143,8 +144,6 @@ async function loadRealData(
 }
 
 export default async function PreviewPage({ params, searchParams }: PreviewPageProps) {
-  if (process.env.NODE_ENV === "production") notFound();
-
   const { pieceId } = await params;
   if (!isPieceId(pieceId)) notFound();
 
@@ -155,6 +154,20 @@ export default async function PreviewPage({ params, searchParams }: PreviewPageP
   const brandIdParam = typeof query.brandId === "string" ? query.brandId : undefined;
 
   if (!isDemo && !propertyIdParam) notFound();
+
+  // Control de acceso (F-14). En produccion esta ruta pinta datos reales de una
+  // propiedad y la app de v1 no tiene auth, asi que exige el token que acuña el
+  // renderer. En desarrollo se deja abierta a proposito: es la superficie con
+  // la que se trabaja el diseño de las piezas (scripts/qa-visual, `?demo=1`).
+  if (process.env.NODE_ENV === "production") {
+    if (isDemo) notFound();
+    const renderToken = typeof query.rt === "string" ? query.rt : undefined;
+    const authorized = verifyPreviewToken(renderToken, {
+      pieceId,
+      propertyId: propertyIdParam as string,
+    });
+    if (!authorized) notFound();
+  }
 
   const { view, brand, photos } = isDemo
     ? loadDemoData(presetParam)

@@ -1,5 +1,3 @@
-import { notFound } from "next/navigation";
-
 /**
  * Root layout PROPIO de /preview (patron Next.js "multiple root layouts"):
  * NO hereda app/(main)/layout.tsx, por tanto ni sus fuentes (Fraunces/Inter
@@ -9,16 +7,14 @@ import { notFound } from "next/navigation";
  * dimensiones de la pieza (paso 4.2 del PLAN.md: "sin scroll, sin margenes
  * de user-agent").
  *
- * DEV-only: 404 real en produccion (build de Vercel/prod no debe exponer
- * esta ruta).
+ * Esta ruta SI existe en produccion desde el cierre de F-14: Playwright captura
+ * de aqui, asi que devolver 404 en prod dejaba al sistema sin generacion visual
+ * fuera de `next dev`. El control de acceso vive en la page, que es quien ve
+ * los searchParams y puede validar el token de render.
  */
 export default function PreviewLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  if (process.env.NODE_ENV === "production") {
-    notFound();
-  }
-
   return (
     <html lang="es">
       <body style={{ margin: 0, padding: 0, border: 0, minWidth: 0, minHeight: 0 }}>

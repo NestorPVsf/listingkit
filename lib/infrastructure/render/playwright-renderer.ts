@@ -19,6 +19,7 @@ import type {
   RendererPort,
   RenderSession,
 } from "@/lib/engine/ports/renderer";
+import { mintPreviewToken } from "@/lib/render-access/preview-token";
 
 export interface PreviewCaptureTarget {
   readonly previewId: string;
@@ -131,6 +132,12 @@ function previewUrl(
   const url = new URL(`/preview/${encodeURIComponent(previewId)}`, baseUrl);
   url.searchParams.set("propertyId", entityId);
   url.searchParams.set("brandId", "");
+  // F-14: la ruta de render ya no es DEV-only, asi que cada captura se
+  // identifica con un token efimero ligado a esta pieza y esta propiedad.
+  url.searchParams.set(
+    "rt",
+    mintPreviewToken({ pieceId: previewId, propertyId: entityId }),
+  );
   return url.toString();
 }
 

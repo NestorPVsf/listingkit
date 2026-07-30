@@ -34,12 +34,12 @@ del cliente, no del sistema.
 
 | Comprobación | Resultado |
 |---|---|
-| `npx vitest run` | **265 pasan / 265** (20 ficheros) |
+| `npx vitest run` | **273 pasan / 273** (21 ficheros) |
 | `npx playwright test` | **9 pasan / 9** (flujo completo por UI + render real de las 6 piezas) |
 | `npx tsc --noEmit` | **0 errores** |
 | `npm run build` | **exit 0**, 21 rutas |
 
-De esos 265 unitarios, **9 ficheros son de seguridad** (`tests/security/`) y existen porque
+De esos 273 unitarios, **10 ficheros son de seguridad** (`tests/security/`) y existen porque
 cada uno corresponde a un agujero real que se encontró y se cerró, no a una casilla de
 cobertura:
 
@@ -48,6 +48,7 @@ cobertura:
 - `image-metadata-strip` — ni por el EXIF de las fotos
 - `brand-logo-active-content` — ni por un logo SVG con `<script>`
 - `zip-package` · `zip-package-scope` — el ZIP lleva lo que debe, y todo lo que debe
+- `preview-render-token` — la ruta de render no se abre sin un token firmado y caduco
 - `path-traversal` · `file-size-limits` — lo básico de subida de ficheros
 
 El E2E de la ficha PDF **extrae el texto del PDF generado** y comprueba que la dirección
@@ -98,6 +99,7 @@ Dos pasadas independientes sobre el código terminado:
 | F-10 | `stderr` de FFmpeg ilimitado, persistido y devuelto por API | Consumo de memoria + rutas locales del servidor expuestas al navegador |
 | F-11 | Tareas huérfanas en `rendering` tras un reinicio | Piezas que la UI no podía completar **ni reintentar**, para siempre |
 | F-12 | Playwright sin timeout duro | Una foto que no cargaba congelaba **toda** la cola, sin error |
+| F-14 | `/preview/*` era DEV-only y Playwright captura de esa ruta | **Toda** la generación visual fallaba en producción: el único runtime operativo era `next dev` |
 | QUALITY | 4 copias del mapeo a vista pública, ya divergentes | Es *la* allowlist de privacidad; mantenerla en 4 sitios es cuestión de tiempo |
 
 ### Descartado con evidencia
@@ -141,13 +143,14 @@ Esta sección existe porque un audit que solo lista logros no sirve para decidir
 
 | Riesgo | Realidad hoy | Qué haría falta |
 |---|---|---|
-| **El render depende de `next dev`** (F-14) | `/preview/*` es DEV-only y Playwright captura de esa ruta. En `NODE_ENV=production` devuelve 404 y **toda generación visual falla** | Ruta de render protegida por token efímero y restringida a loopback, o render de HTML sin pasar por HTTP |
 | **Sin autenticación** | v1 es monoinquilino por diseño: cualquiera con acceso a la red del proceso opera la app entera | Auth + multiinquilino (fuera del alcance de v1) |
-| **Un solo proceso** (F-05) | La cola vive en memoria y los artefactos se escriben en rutas fijas (`output/<propiedad>/<fichero>`). Dos instancias se pisarían los ficheros | Rutas inmutables por job + lock en base de datos |
+| **Un solo proceso** (F-05) | La cola vive en memoria y los artefactos se escriben en rutas fijas (`output/<propiedad>/<fichero>`). Dos instancias se pisarían los ficheros. El secreto del token de render también es por proceso: con varias instancias hay que fijar `RENDER_PREVIEW_SECRET` | Rutas inmutables por job + lock en base de datos |
 
-**Conclusión honesta:** esto es un producto **demo-ready y piloto-ready en local**, no
-production-ready en internet. Para enseñárselo a una inmobiliaria y generar sus piezas reales
-en el portátil del comercial, sirve hoy. Para dejarlo abierto en un servidor, no.
+**Conclusión honesta:** con F-14 cerrado, `next start` genera las 6 piezas (verificado end-to-end
+contra un build de producción real, no solo en tests). Lo que sigue impidiendo exponerlo en una red
+es la ausencia de autenticación, que en v1 es una decisión, no un olvido: cualquiera con acceso al
+puerto opera la aplicación entera. Sirve hoy para instalarlo en la máquina de una inmobiliaria y
+trabajar en local; para dejarlo abierto en internet hace falta la capa de auth.
 
 ### 6.2 Deuda conocida, no bloqueante
 
