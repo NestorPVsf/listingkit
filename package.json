@@ -10,7 +10,8 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "test:all": "vitest run && playwright test",
-    "db:seed": "node prisma/seed.ts"
+    "db:seed": "node prisma/seed.ts",
+    "set-password": "node scripts/set-password.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.5.7",

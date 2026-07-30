@@ -13,3 +13,9 @@ export const PROD_BASE_URL = `http://localhost:${PROD_PORT}`;
 
 /** 40 caracteres: por encima del minimo de 32 que exige el modulo del token. */
 export const PROD_PREVIEW_SECRET = "e2e-prod-secret-no-usar-en-produccion-01";
+
+/**
+ * Candado de operador para el servidor de pruebas de produccion. El hash se
+ * calcula al vuelo (no se versiona un hash fijo) y viaja a `webServer.env`.
+ */
+export const PROD_OPERATOR_PASSWORD = "contrasena-de-prueba-del-e2e";

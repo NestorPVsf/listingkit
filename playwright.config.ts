@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
+import { hashPassword } from "./lib/auth/operator-session";
 import {
   PROD_BASE_URL,
+  PROD_OPERATOR_PASSWORD,
   PROD_PORT,
   PROD_PREVIEW_SECRET,
 } from "./tests/e2e/prod-server";
@@ -65,6 +67,9 @@ export default defineConfig({
         NODE_ENV: "production",
         RENDER_BASE_URL: PROD_BASE_URL,
         RENDER_PREVIEW_SECRET: PROD_PREVIEW_SECRET,
+        // El candado de operador se prueba encendido: en produccion es
+        // obligatorio, y sin el la app responde 503 a todo.
+        APP_PASSWORD_HASH: hashPassword(PROD_OPERATOR_PASSWORD),
       },
     },
   ],

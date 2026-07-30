@@ -26,7 +26,7 @@ import {
   uploadDemoPhotos,
 } from "../fixtures/demo-property";
 import { createDemoProperty, pollRenderJob, triggerGenerate } from "./helpers";
-import { PROD_PREVIEW_SECRET } from "./prod-server";
+import { PROD_OPERATOR_PASSWORD, PROD_PREVIEW_SECRET } from "./prod-server";
 import { mintPreviewToken } from "../../lib/render-access/preview-token";
 
 // El modulo lee el secreto de forma perezosa al firmar, asi que basta con
@@ -36,6 +36,13 @@ process.env.RENDER_PREVIEW_SECRET = PROD_PREVIEW_SECRET;
 const PIEZA = "post-instagram";
 
 async function crearPropiedad(request: Parameters<typeof createDemoProperty>[0]) {
+  // Las APIs de negocio estan detras del candado de operador desde que se cerro
+  // el bloqueante de autenticacion; /preview no, que tiene su propio token.
+  const sesion = await request.post("/api/auth/session", {
+    data: { password: PROD_OPERATOR_PASSWORD },
+  });
+  expect(sesion.ok(), "no se pudo abrir sesion de operador").toBe(true);
+
   const photoAssetIds = await uploadDemoPhotos(request);
   return createDemoProperty(
     request,

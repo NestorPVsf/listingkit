@@ -34,12 +34,12 @@ del cliente, no del sistema.
 
 | Comprobación | Resultado |
 |---|---|
-| `npx vitest run` | **283 pasan / 283** (21 ficheros) |
-| `npx playwright test` | **14 pasan / 14** — 9 contra `next dev` (flujo por UI + render real de las 6 piezas) y **5 contra un build de producción** (`next build && next start`) |
+| `npx vitest run` | **294 pasan / 294** (22 ficheros) |
+| `npx playwright test` | **24 pasan / 24** — 9 contra `next dev` (flujo por UI + render real de las 6 piezas) y **15 contra un build de producción** (`next build && next start`) |
 | `npx tsc --noEmit` | **0 errores** |
 | `npm run build` | **exit 0**, 21 rutas |
 
-De esos 283 unitarios, **10 ficheros son de seguridad** (`tests/security/`) y existen porque
+De esos 294 unitarios, **11 ficheros son de seguridad** (`tests/security/`) y existen porque
 cada uno corresponde a un agujero real que se encontró y se cerró, no a una casilla de
 cobertura:
 
@@ -49,6 +49,7 @@ cobertura:
 - `brand-logo-active-content` — ni por un logo SVG con `<script>`
 - `zip-package` · `zip-package-scope` — el ZIP lleva lo que debe, y todo lo que debe
 - `preview-render-token` — la ruta de render no se abre sin un token firmado y caduco
+- `operator-session` — la llave de la instalación no se fabrica ni se estira
 - `path-traversal` · `file-size-limits` — lo básico de subida de ficheros
 
 El E2E de la ficha PDF **extrae el texto del PDF generado** y comprueba que la dirección
@@ -124,6 +125,28 @@ Ese último es el que más valía. También destapó que dos casos de mi propia
 batería usaban una caducidad del año 2001, así que se rechazaban por caducados
 y **nunca llegaban a ejercitar el parser de firma** que decían probar.
 
+### Candado de operador
+
+La aplicación ya no se abre sola. Una contraseña única de operador (scrypt con sal en
+`APP_PASSWORD_HASH`, generada con `npm run set-password`), sesión en cookie firmada `HttpOnly`
++ `Secure` + `SameSite=lax` con 12 h de vida, y un middleware que lo aplica en un solo sitio.
+
+Tres decisiones que conviene entender:
+
+- **La clave que firma la sesión se deriva del propio hash de la contraseña.** No hace falta un
+  segundo secreto que alguien olvidaría configurar, y cambiarla invalida todas las sesiones
+  vivas — que es justo lo que uno espera al cambiarla porque sospecha algo.
+- **Sin `APP_PASSWORD_HASH` en producción la app responde 503 a todo.** Falla cerrado y ruidoso:
+  una instalación sin candado en una red es exactamente el problema que esto viene a evitar.
+- **Las excepciones son tres y cada una es una puerta**: `/login` y `/api/auth/*` (evidente),
+  `/preview/*` (tiene su propio token; exigirle cookie rompería toda la generación, que es el bug
+  F-14 otra vez) y los subrecursos que carga la pieza al renderizarse (`/api/assets/*`,
+  `/uploads/brand/*`), que no llevan sesión. Estos últimos se protegen por identificador opaco,
+  que **no es equivalente a autenticación**.
+
+10 tests contra el build de producción cubren el candado, y como los demás, se validó contra el
+propio fallo: desactivándolo, 4 de los 15 se ponen rojos.
+
 ### El E2E que faltaba: modo producción
 
 Los dos incidentes más caros de este proyecto pasaron **con toda la suite en
@@ -190,14 +213,16 @@ Esta sección existe porque un audit que solo lista logros no sirve para decidir
 
 | Riesgo | Realidad hoy | Qué haría falta |
 |---|---|---|
-| **Sin autenticación** | v1 es monoinquilino por diseño: cualquiera con acceso a la red del proceso opera la app entera | Auth + multiinquilino (fuera del alcance de v1) |
 | **Un solo proceso** (F-05) | La cola vive en memoria y los artefactos se escriben en rutas fijas (`output/<propiedad>/<fichero>`). Dos instancias se pisarían los ficheros. El secreto del token de render también es por proceso: con varias instancias hay que fijar `RENDER_PREVIEW_SECRET` | Rutas inmutables por job + lock en base de datos |
 
-**Conclusión honesta:** con F-14 cerrado, `next start` genera las 6 piezas (verificado end-to-end
-contra un build de producción real, no solo en tests). Lo que sigue impidiendo exponerlo en una red
-es la ausencia de autenticación, que en v1 es una decisión, no un olvido: cualquiera con acceso al
-puerto opera la aplicación entera. Sirve hoy para instalarlo en la máquina de una inmobiliaria y
-trabajar en local; para dejarlo abierto en internet hace falta la capa de auth.
+**Conclusión honesta:** `next start` genera las 6 piezas y la aplicación ya no está abierta:
+hay candado de operador. Lo que queda para exponerlo en serio es **un solo proceso** — la cola
+vive en memoria y los artefactos se escriben en rutas fijas, así que dos instancias se pisarían.
+Con una sola instancia detrás de HTTPS, hoy es instalable en una inmobiliaria.
+
+Y lo que el candado **no** es: gestión de usuarios. Una instalación = una agencia = una
+contraseña. No hay usuarios, ni roles, ni trazabilidad de quién hizo qué. Multi-inquilino sigue
+siendo otro producto.
 
 ### 6.2 Deuda conocida, no bloqueante
 
