@@ -1,7 +1,7 @@
 import type { BrandBindings, EntityInput, RenderJob } from "@/lib/engine/contracts";
 import { createEngine, type Engine } from "@/lib/engine/create-engine";
 import { createPrismaRenderJobRepository } from "@/lib/infrastructure/db/render-job-repository.prisma";
-import { jszipPackageBuilder } from "@/lib/infrastructure/package/jszip-package-builder";
+import { createJszipPackageBuilder } from "@/lib/infrastructure/package/jszip-package-builder";
 import { createCompositeRenderer } from "@/lib/infrastructure/render/composite-renderer";
 import { createEmailRenderer } from "@/lib/infrastructure/render/email-renderer";
 import { createPlaywrightRenderer } from "@/lib/infrastructure/render/playwright-renderer";
@@ -15,6 +15,8 @@ import {
   type BrandConfig,
   type BrandPreset,
 } from "@/niches/inmobiliaria/brand.schema";
+import { composePropertyEmail } from "@/niches/inmobiliaria/email/compose";
+import { inmobiliariaPackagePlan } from "@/niches/inmobiliaria/package/plan";
 import { resolveInmobiliariaPreviewPlan } from "@/niches/inmobiliaria/render-plan";
 import { loadVideoPieceData } from "@/niches/inmobiliaria/video/load-piece-data";
 import { nicheRegistry } from "@/niches/registry";
@@ -213,10 +215,12 @@ function createApplication(): Application {
     renderer: createCompositeRenderer({
       pdf: playwrightRenderer,
       image: playwrightRenderer,
-      email: createEmailRenderer({ baseUrl }),
+      email: createEmailRenderer({ baseUrl, composeEmail: composePropertyEmail }),
       video: videoRenderer,
     }),
-    packages: jszipPackageBuilder,
+    packages: createJszipPackageBuilder({
+      inmobiliaria: inmobiliariaPackagePlan,
+    }),
     clock: {
       now: () => new Date().toISOString(),
     },

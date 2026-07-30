@@ -1,4 +1,11 @@
 /**
+ * Vivia en `lib/text-engine/index.ts`, pero genera copy INMOBILIARIO: importaba
+ * `PublicPropertyView`, la politica de texto y las etiquetas del nicho, mientras
+ * el nicho importaba de vuelta `compose`/`policy`. Esa dependencia circular
+ * entre "generico" y "vertical" era la señal de que el fichero estaba en la
+ * capa equivocada. Lo que si es generico —componer, sanear frases prohibidas y
+ * el puerto `AiProvider`— se queda en `lib/text-engine/`.
+ *
  * Motor de texto por plantillas locales (sin IA) — Fase 4.3 del PLAN.md.
  * Determinista: misma `PublicPropertyView` + mismas opciones -> mismo
  * `PropertyTextBundle`, siempre (sin `Math.random`, sin reloj).
@@ -8,14 +15,14 @@
  * excluyo). El vocabulario y la politica de frases son configuracion del
  * vertical, importada desde `niches/inmobiliaria/`.
  */
-import type { PublicPropertyView } from "@/niches/inmobiliaria/public-view";
-import { realEstateTextPolicy } from "@/niches/inmobiliaria/text-policy";
+import type { PublicPropertyView } from "./public-view";
+import { realEstateTextPolicy } from "./text-policy";
 import {
   buildFeatureList,
   CONDITION_LABELS,
   PROPERTY_TYPE_LABELS,
-} from "@/niches/inmobiliaria/text-labels";
-import { sanitizeProhibitedPhrases } from "./policy";
+} from "./text-labels";
+import { sanitizeProhibitedPhrases } from "@/lib/text-engine/policy";
 import {
   capitalize,
   formatPriceLabel,
@@ -23,7 +30,7 @@ import {
   joinSentences,
   joinWithAnd,
   truncateAtWord,
-} from "./compose";
+} from "@/lib/text-engine/compose";
 
 export interface PropertyTextBundle {
   readonly headline: string;
@@ -214,5 +221,5 @@ function censorBundle(
   };
 }
 
-export type { AiProvider } from "./ai-provider";
-export { noopAiProvider } from "./ai-provider";
+export type { AiProvider } from "@/lib/text-engine/ai-provider";
+export { noopAiProvider } from "@/lib/text-engine/ai-provider";

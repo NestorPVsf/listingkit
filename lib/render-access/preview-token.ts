@@ -32,8 +32,32 @@
  */
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
-/** Holgado frente a los 90 s de techo por captura, corto frente a un log filtrado. */
-const TOKEN_TTL_MS = 5 * 60_000;
+/**
+ * Una captura tiene 90 s de techo y el token se acuña justo antes de navegar,
+ * asi que 2 min sobran. Estaba en 5: la review cross-model señalo que el token
+ * viaja en la URL y es reutilizable mientras viva, asi que la ventana util de
+ * una URL filtrada (access log, APM, Referer) es exactamente el TTL. No hay
+ * nonce ni consumo unico — decision consciente, ver §"replay" en AUDIT.md.
+ */
+const TOKEN_TTL_MS = 2 * 60_000;
+
+/**
+ * Un secreto configurado tiene que ser un secreto. `RENDER_PREVIEW_SECRET=x`
+ * se aceptaba, y con una sola URL filtrada el mensaje, la caducidad y el HMAC
+ * son conocidos: probar un diccionario offline es trivial. 32 caracteres es el
+ * minimo razonable para 128+ bits de entropia en base64/hex.
+ */
+const MIN_CONFIGURED_SECRET_LENGTH = 32;
+
+/**
+ * Forma canonica exigida: caducidad decimal sin ceros a la izquierda, un unico
+ * punto y 64 hex en minusculas. Sin esto se colaban variantes equivalentes
+ * (`1.7850003e12`, ceros delante, espacios) y sufijos despues de la firma,
+ * porque `Buffer.from(x, "hex")` ignora lo que no es hexadecimal. No permitian
+ * cambiar el alcance —va firmado— pero rompen la identidad del token y con
+ * ella cualquier deduplicacion, redaccion o revocacion futura.
+ */
+const CANONICAL_TOKEN = /^(0|[1-9]\d*)\.([0-9a-f]{64})$/;
 
 export interface PreviewTokenScope {
   /** Identificador de la pieza en la URL (`post-instagram`, `ficha-pdf`...). */
@@ -51,6 +75,13 @@ const runtimeGlobal = globalThis as RuntimeGlobal;
 function secret(): Buffer {
   const configured = process.env.RENDER_PREVIEW_SECRET;
   if (configured && configured.length > 0) {
+    if (configured.length < MIN_CONFIGURED_SECRET_LENGTH) {
+      // Falla al arrancar y no en silencio: un secreto debil aqui es peor que
+      // ninguno, porque da sensacion de proteccion.
+      throw new Error(
+        `RENDER_PREVIEW_SECRET_TOO_WEAK: minimo ${MIN_CONFIGURED_SECRET_LENGTH} caracteres`,
+      );
+    }
     return Buffer.from(configured, "utf8");
   }
   runtimeGlobal.__inmoPreviewSecret ??= randomBytes(32);
@@ -83,17 +114,60 @@ export function verifyPreviewToken(
 ): boolean {
   if (!token) return false;
 
-  const separator = token.indexOf(".");
-  if (separator <= 0) return false;
+  const canonical = CANONICAL_TOKEN.exec(token);
+  if (!canonical) return false;
 
-  const expiresAt = Number(token.slice(0, separator));
-  if (!Number.isSafeInteger(expiresAt) || expiresAt <= now) return false;
+  const expiresAt = Number(canonical[1]);
+  if (!Number.isSafeInteger(expiresAt)) return false;
+  // Caducado, o con una vida mas larga de la que este servidor acuña nunca.
+  // Lo segundo no es forjable (la caducidad va firmada), pero acota el daño si
+  // el secreto se filtra: un token con caducidad en 2099 deja de servir.
+  if (expiresAt <= now || expiresAt > now + TOKEN_TTL_MS) return false;
 
-  const provided = Buffer.from(token.slice(separator + 1), "hex");
+  const provided = Buffer.from(canonical[2] as string, "hex");
   const expected = Buffer.from(sign(scope, expiresAt), "hex");
   // Longitudes distintas hacen explotar timingSafeEqual, asi que se comprueba
   // antes; no filtra nada util porque la longitud de la firma es fija.
   if (provided.length !== expected.length || provided.length === 0) return false;
 
   return timingSafeEqual(provided, expected);
+}
+
+export interface PreviewAccessRequest {
+  readonly isProduction: boolean;
+  readonly isDemo: boolean;
+  readonly pieceId: string;
+  readonly propertyId?: string;
+  readonly token?: string;
+}
+
+/**
+ * La decision de acceso a la ruta de render, como funcion pura.
+ *
+ * Vivia como un `if` dentro de la page, y la review cross-model puso el dedo en
+ * la llaga: los tests solo ejercitaban las funciones criptograficas, asi que
+ * borrar ese bloque —o mover la consulta a Prisma por delante— dejaba la suite
+ * entera en verde con la ruta abierta. Aqui la politica se pueda probar caso a
+ * caso; la page se limita a obedecer.
+ *
+ * En desarrollo se deja pasar a proposito: es la superficie con la que se
+ * trabaja el diseño de las piezas (`scripts/qa-visual`, `?demo=1`). Por eso
+ * `next dev` no debe exponerse a una red.
+ */
+export function isPreviewAccessAllowed(
+  request: Readonly<PreviewAccessRequest>,
+  now: number = Date.now(),
+): boolean {
+  if (!request.isProduction) return true;
+
+  // El modo demo pinta datos de muestra y solo sirve para diseñar: en
+  // produccion es superficie sin ninguna razon de ser.
+  if (request.isDemo) return false;
+  if (!request.propertyId) return false;
+
+  return verifyPreviewToken(
+    request.token,
+    { pieceId: request.pieceId, propertyId: request.propertyId },
+    now,
+  );
 }

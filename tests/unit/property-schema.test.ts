@@ -16,12 +16,14 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-  photoUploadSchema,
   propertyInputSchema,
-  sanitizeFileName,
   toPublicPropertyInput,
   type PropertyInput,
 } from "@/niches/inmobiliaria/schema";
+import {
+  photoUploadSchema,
+  sanitizeFileName,
+} from "@/lib/infrastructure/files/upload-contract";
 
 // ---------------------------------------------------------------------------
 // Fixture base — Propiedad 1 demo: "Piso reforma en Centro Alicante"

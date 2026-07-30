@@ -1,10 +1,15 @@
 /**
- * RendererPort para la pieza "property-email" (spec.md pieza 5). A diferencia
- * de playwright-renderer.ts, NO necesita navegador: la plantilla ya es un
- * string HTML/texto (niches/inmobiliaria/email/render-email.ts). Este modulo
- * solo hace I/O (cargar datos, escribir a disco) — misma disciplina de
- * escritura atomica (tmp + rename) que el renderer Playwright, duplicada
- * aqui a proposito para no tocar ese archivo (restriccion del brief).
+ * RendererPort para piezas de correo. A diferencia de playwright-renderer.ts,
+ * NO necesita navegador: la plantilla ya devuelve HTML y texto plano. Este
+ * modulo solo hace I/O (pedir el contenido, escribirlo a disco) con la misma
+ * escritura atomica (tmp + rename) que el renderer Playwright.
+ *
+ * No conoce ningun vertical: quien sabe componer el correo es el nicho, y lo
+ * inyecta la raiz de composicion via `composeEmail`. Antes importaba
+ * directamente `niches/inmobiliaria/email/*`, lo que rompia la regla de la ADR
+ * ("ni createEngine ni los renderers importan niches/inmobiliaria") y ataba el
+ * unico renderer de correo del sistema a una sola vertical. Es el mismo patron
+ * que ya usaban `resolvePlan` (Playwright) y `resolveStoryboard` (video).
  */
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
@@ -12,11 +17,25 @@ import path from "node:path";
 import type { RenderArtifact, RenderJob, RenderTask } from "@/lib/engine/contracts";
 import { EngineError } from "@/lib/engine/errors";
 import type { RendererPort, RenderSession } from "@/lib/engine/ports/renderer";
-import { renderPropertyEmail } from "@/niches/inmobiliaria/email/render-email";
-import { loadEmailPieceData } from "@/niches/inmobiliaria/email/load-piece-data";
+
+/** Lo que el nicho devuelve ya renderizado. */
+export interface EmailContent {
+  readonly html: string;
+  readonly text: string;
+}
+
+/**
+ * Compone el correo de una entidad. Devuelve `null` si la entidad ya no existe
+ * — el renderer lo traduce a un fallo no reintentable.
+ */
+export type EmailComposer = (
+  entityId: string,
+  baseUrl: string,
+) => Promise<EmailContent | null>;
 
 export interface EmailRendererOptions {
   readonly baseUrl: string;
+  readonly composeEmail: EmailComposer;
 }
 
 function safeSegment(value: string): string {
@@ -81,18 +100,17 @@ export function createEmailRenderer(options: EmailRendererOptions): RendererPort
     async open(): Promise<RenderSession> {
       return {
         async render(job: Readonly<RenderJob>, task: Readonly<RenderTask>) {
-          const data = await loadEmailPieceData(job.entityId, options.baseUrl);
-          if (!data) {
+          const output = await options.composeEmail(job.entityId, options.baseUrl);
+          if (!output) {
             throw new EngineError({
               code: "ENTITY_NOT_FOUND",
-              cause: "No existe la propiedad asociada a este trabajo.",
-              solution: "Comprueba que la propiedad no se elimino antes de renderizar.",
+              cause: "No existe la entidad asociada a este trabajo.",
+              solution: "Comprueba que no se elimino antes de renderizar.",
               retryable: false,
               taskStatus: "blocked",
             });
           }
 
-          const output = renderPropertyEmail(data.view, data.brand, data.texts, data.photos);
           const entitySegment = safeSegment(job.entityId);
           const jobSegment = safeSegment(job.id);
 

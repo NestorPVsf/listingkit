@@ -13,7 +13,7 @@ import type { AssetRef } from "@/lib/engine/contracts";
 import {
   photoUploadSchema,
   sanitizeFileName,
-} from "@/niches/inmobiliaria/schema";
+} from "@/lib/infrastructure/files/upload-contract";
 
 const imageAssetMetadataSchema = z.object({
   id: z.string().uuid(),

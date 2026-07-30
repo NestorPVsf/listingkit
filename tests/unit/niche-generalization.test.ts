@@ -294,6 +294,20 @@ describe("criterio duro de la ADR — el motor no conoce ningun vertical", () =>
     expect(offenders).toEqual([]);
   });
 
+  it("solo la raiz de composicion puede importar un vertical desde lib/", () => {
+    // La ADR lo dice literal: "La raiz de composicion es la unica capa que
+    // importa simultaneamente core, infraestructura y niches/registry.ts".
+    // Cablear es su trabajo; el resto de `lib/` debe poder compilarse sin que
+    // exista ningun nicho.
+    const libRoot = path.resolve(process.cwd(), "lib");
+    const infractores = sourceFiles(libRoot)
+      .filter((file) => !file.includes(`${path.sep}bootstrap${path.sep}`))
+      .filter((file) => /from ["']@\/niches\//.test(readFileSync(file, "utf8")))
+      .map((file) => path.relative(process.cwd(), file));
+
+    expect(infractores).toEqual([]);
+  });
+
   it("el config dental declara todo lo que el motor necesita, y nada mas", () => {
     expect(Object.keys(clinicaDentalConfig).toSorted()).toEqual([
       "bindingMap",

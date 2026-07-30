@@ -26,7 +26,7 @@ import { randomUUID } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { applyHeadlineOverride } from "@/niches/inmobiliaria/apply-text-override";
 import { loadEmailPieceData } from "@/niches/inmobiliaria/email/load-piece-data";
-import { generatePropertyTexts } from "@/lib/text-engine";
+import { generatePropertyTexts } from "@/niches/inmobiliaria/text-engine";
 import { propertyTextBundleToPieceTexts } from "@/niches/inmobiliaria/piece-texts-adapter";
 import type { PublicPropertyView } from "@/niches/inmobiliaria/public-view";
 import { demoPropertyPayload } from "@/tests/fixtures/demo-property";

@@ -1,27 +1,20 @@
 /**
- * Paso 6.2 del PLAN.md — implementación del `PackageBuilder` (ZIP
- * descargable con todas las piezas de una propiedad). Contrato exacto en
- * `tests/security/zip-package.test.ts`.
+ * `PackageBuilder`: el ZIP que descarga el cliente con todas las piezas de una
+ * entidad.
  *
- * Estrategia: los binarios (pdf/png/mp4) se copian de `output/<entityId>/`
- * (misma convención de nombre plano que escriben playwright-renderer.ts y
- * email-renderer.ts); si una pieza solicitada no tiene artefacto "done" en
- * `job.tasks` NI el archivo existe en disco (job aún no ejecutado por el
- * pipeline real, como en el fixture de test), se genera un marcador mínimo
- * para no romper el contrato de nombres y se anota en `README.txt` +
- * `manifest.omittedPieces`.
+ * Los binarios (pdf/png/mp4) se copian de `output/<entityId>/` — misma
+ * convencion de nombre plano que escriben playwright-renderer.ts y
+ * email-renderer.ts. Si una pieza pedida no tiene artefacto "done" en
+ * `job.tasks` NI fichero en disco, se incluye un marcador minimo para no romper
+ * el contrato de nombres y se anota en `README.txt` + `manifest.omittedPieces`:
+ * lo que falta se declara, nunca desaparece en silencio.
  *
- * Los textos (copy-instagram.txt/guion-video.txt) y `datos-propiedad.json`
- * se derivan de `PublicPropertyView` — el MISMO tipo que ya usan
- * email-renderer.ts/load-piece-data.ts (video), duplicando a propósito la
- * carga de Property vía Prisma (patrón ya establecido en este módulo,
- * ver comentario de `niches/inmobiliaria/email/load-piece-data.ts`).
- * `PublicPropertyView` EXCLUYE `privateAddress`/`internalName` por
- * construcción (allowlist de campos) — no hay forma de que se filtren.
- * Si la propiedad no existe (fixture aislado sin DB real), se cae a una
- * vista mínima sintética construida solo con los datos públicos ya
- * presentes en `job.bindings` (nunca con datos privados: el binding map
- * jamás incluye privateAddress/internalName — regla dura #1 de spec.md).
+ * Este modulo NO conoce ningun vertical. Que ficheros produce cada pieza, como
+ * se llama el ZIP y que textos extra lleva lo aporta el nicho a traves de un
+ * `NichePackagePlan`, y **se resuelve por `job.nicheId`**. Antes estaba escrito
+ * a mano aqui junto a consultas a `prisma.property`, asi que con un segundo
+ * nicho registrado un `entityId` coincidente metia datos de una propiedad en el
+ * ZIP de otro vertical (hallazgo F-13 de la review adversarial).
  */
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, rename, rm, stat, writeFile } from "node:fs/promises";
@@ -34,33 +27,9 @@ import type {
   RenderArtifact,
   RenderJob,
 } from "@/lib/engine/contracts";
+import { EngineError } from "@/lib/engine/errors";
 import type { PackageBuilder } from "@/lib/engine/ports/package-builder";
-import { generatePropertyTexts } from "@/lib/text-engine";
-import { prisma } from "@/lib/prisma";
-import { propertyTextBundleToPieceTexts } from "@/niches/inmobiliaria/piece-texts-adapter";
-import { resolveTextOverride } from "@/niches/inmobiliaria/apply-text-override";
-import type { PublicPropertyView } from "@/niches/inmobiliaria/public-view";
-import { storedPropertyToPublicView } from "@/niches/inmobiliaria/persistence/public-view-mapper";
-
-interface PieceFileSpec {
-  readonly fileName: string;
-  readonly mediaType: string;
-}
-
-const PIECE_FILES: Record<string, readonly PieceFileSpec[]> = {
-  "property-sheet": [{ fileName: "ficha-tecnica.pdf", mediaType: "application/pdf" }],
-  "instagram-post": [{ fileName: "post-instagram.png", mediaType: "image/png" }],
-  "instagram-carousel": Array.from({ length: 5 }, (_, index) => ({
-    fileName: `carrusel-${String(index + 1).padStart(2, "0")}.png`,
-    mediaType: "image/png",
-  })),
-  "instagram-story": [{ fileName: "story-instagram.png", mediaType: "image/png" }],
-  "property-email": [
-    { fileName: "email.html", mediaType: "text/html" },
-    { fileName: "email.txt", mediaType: "text/plain" },
-  ],
-  "vertical-video": [{ fileName: "video-vertical.mp4", mediaType: "video/mp4" }],
-};
+import type { NichePackagePlan } from "./niche-package-plan";
 
 const SAFE_SEGMENT = /^[a-zA-Z0-9_-]+$/;
 
@@ -114,92 +83,24 @@ function placeholderBuffer(fileName: string, mediaType: string): Buffer {
   );
 }
 
-function buildFallbackView(job: Readonly<RenderJob>): PublicPropertyView {
-  const contact = job.bindings.brand.contact;
-  return {
-    id: job.entityId,
-    operation: "sale",
-    propertyType: "apartment",
-    price: 0,
-    currency: "EUR",
-    city: job.bindings.brand.name || "",
-    builtAreaM2: 0,
-    bedrooms: 0,
-    bathrooms: 0,
-    elevator: false,
-    terrace: false,
-    balcony: false,
-    garage: false,
-    storageRoom: false,
-    pool: false,
-    garden: false,
-    condition: "good",
-    description: "",
-    highlights: [],
-    cta: "Contactar",
-    agent: {
-      name: job.bindings.brand.name || "",
-      phone: contact.phone ?? "",
-      email: contact.email ?? "",
-    },
-    agency: {
-      name: job.bindings.brand.name || "",
-      website: contact.website,
-    },
-    photoAssetIds: [],
-    primaryPhotoAssetId: "",
-  };
-}
-
-async function loadPublicView(job: Readonly<RenderJob>): Promise<PublicPropertyView> {
-  const property = await prisma.property.findUnique({
-    where: { id: job.entityId },
-    // Con las fotos: `datos-propiedad.json` declaraba `photoAssetIds: []`
-    // aunque la propiedad tuviera 12 fotos, porque esta consulta era la unica
-    // de las cuatro copias del mapeo que no hacia el join.
-    include: { photos: { orderBy: { order: "asc" } } },
-  });
-  if (!property) {
-    return buildFallbackView(job);
-  }
-  return storedPropertyToPublicView(property);
-}
-
-/** Override de texto editado por el usuario (regenerate-piece/route.ts), si existe. */
-async function loadTextOverride(
-  entityId: string,
-  pieceKey: string,
-): Promise<string | undefined> {
-  try {
-    return await resolveTextOverride(entityId, pieceKey);
-  } catch {
-    return undefined;
-  }
-}
-
 function buildReadme(params: {
+  readonly plan: NichePackagePlan;
   readonly entityId: string;
   readonly jobId: string;
   readonly includedFiles: readonly string[];
   readonly omittedPieces: readonly { readonly pieceKey: PieceKey; readonly reason: string }[];
 }): string {
   const lines = [
-    "InmoContent OS — paquete de piezas generadas",
-    "==============================================",
+    params.plan.readmeTitle,
+    "=".repeat(params.plan.readmeTitle.length),
     "",
-    `Propiedad: ${params.entityId}`,
+    `${params.plan.entityLabel}: ${params.entityId}`,
     `Trabajo de generación: ${params.jobId}`,
     "",
     "Contenido de este ZIP:",
-    "- ficha-tecnica.pdf: ficha técnica en PDF de la propiedad.",
-    "- post-instagram.png: imagen para publicación única de Instagram.",
-    "- carrusel-01.png .. carrusel-05.png: 5 imágenes para carrusel de Instagram.",
-    "- story-instagram.png: imagen para historia de Instagram.",
-    "- video-vertical.mp4: vídeo vertical (solo si se solicitó).",
-    "- email.html / email.txt: email de la propiedad (HTML y texto plano).",
-    "- copy-instagram.txt: texto de acompañamiento sugerido para Instagram.",
-    "- guion-video.txt: guión sugerido para el vídeo vertical.",
-    "- datos-propiedad.json: datos públicos de la propiedad (sin información interna/privada).",
+    ...Object.entries(params.plan.fileDescriptions).map(
+      ([fileName, description]) => `- ${fileName}: ${description}`,
+    ),
     "",
   ];
   if (params.omittedPieces.length > 0) {
@@ -213,8 +114,26 @@ function buildReadme(params: {
   return lines.join("\n");
 }
 
-export const jszipPackageBuilder: PackageBuilder = {
+/**
+ * Un plan por nicho. La clave es `job.nicheId`, no una constante: sin eso, con
+ * dos verticales registrados el ZIP de uno podia salir con los ficheros del
+ * otro (F-13).
+ */
+export function createJszipPackageBuilder(
+  plans: Readonly<Record<string, NichePackagePlan>>,
+): PackageBuilder {
+  return {
   async build(job: Readonly<RenderJob>): Promise<Package> {
+    const plan = plans[job.nicheId];
+    if (!plan) {
+      throw new EngineError({
+        code: "NICHE_PACKAGE_PLAN_MISSING",
+        cause: `El nicho "${job.nicheId}" no declara como empaquetar sus piezas.`,
+        solution:
+          "Registra su NichePackagePlan en la raiz de composicion antes de generar el ZIP.",
+        retryable: false,
+      });
+    }
     // El paquete describe LA PROPIEDAD, no un job concreto.
     //
     // Antes se derivaban las claves de `job.tasks`, y eso rompía el caso real
@@ -226,7 +145,7 @@ export const jszipPackageBuilder: PackageBuilder = {
     // Ahora se recorre el catálogo completo de piezas y se incluye lo que haya
     // disponible para la entidad; lo que falte se declara en
     // `manifest.omittedPieces` en vez de desaparecer sin rastro.
-    const requestedKeys = Object.keys(PIECE_FILES);
+    const requestedKeys = Object.keys(plan.pieceFiles);
     const pieceKeysInThisJob = new Set(
       job.tasks.length > 0
         ? job.tasks.map((task) => task.piece.key)
@@ -237,7 +156,7 @@ export const jszipPackageBuilder: PackageBuilder = {
     const omittedPieces: PackageManifest["omittedPieces"][number][] = [];
 
     for (const pieceKey of requestedKeys) {
-      const specs = PIECE_FILES[pieceKey];
+      const specs = plan.pieceFiles[pieceKey];
       if (!specs) continue;
       for (const spec of specs) {
         const existing = await readArtifactBuffer(job, spec.fileName);
@@ -267,23 +186,7 @@ export const jszipPackageBuilder: PackageBuilder = {
       }
     }
 
-    const view = await loadPublicView(job);
-    const bundle = generatePropertyTexts(view);
-    const pieceTexts = propertyTextBundleToPieceTexts(bundle, view);
-    void pieceTexts; // reservado para futuras piezas; los campos usados hoy vienen del bundle directo.
-
-    const instagramCopy =
-      (await loadTextOverride(job.entityId, "instagram-post")) ?? bundle.instagramPostCopy;
-    const videoScript =
-      (await loadTextOverride(job.entityId, "vertical-video")) ?? bundle.videoScript;
-    const propertyJson = JSON.stringify(view, null, 2);
-
-    const textFiles: { readonly fileName: string; readonly content: string; readonly mediaType: string; readonly pieceKey: PieceKey | "metadata" | "instructions" }[] =
-      [
-        { fileName: "copy-instagram.txt", content: instagramCopy, mediaType: "text/plain", pieceKey: "instagram-post" },
-        { fileName: "guion-video.txt", content: videoScript, mediaType: "text/plain", pieceKey: "vertical-video" },
-        { fileName: "datos-propiedad.json", content: propertyJson, mediaType: "application/json", pieceKey: "metadata" },
-      ];
+    const textFiles = await plan.extraFiles(job);
 
     for (const file of textFiles) {
       const buffer = Buffer.from(file.content, "utf8");
@@ -298,6 +201,7 @@ export const jszipPackageBuilder: PackageBuilder = {
     }
 
     const readmeContent = buildReadme({
+      plan,
       entityId: job.entityId,
       jobId: job.id,
       includedFiles: Object.keys(zip.files),
@@ -346,7 +250,7 @@ export const jszipPackageBuilder: PackageBuilder = {
     return {
       id: randomUUID(),
       jobId: job.id,
-      fileName: `propiedad-${entitySegment}.zip`,
+      fileName: `${plan.packageNamePrefix}-${entitySegment}.zip`,
       storageKey,
       mediaType: "application/zip",
       bytes: fileStats.size,
@@ -354,4 +258,5 @@ export const jszipPackageBuilder: PackageBuilder = {
       manifest,
     };
   },
-};
+  };
+}

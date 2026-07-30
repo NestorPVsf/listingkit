@@ -12,7 +12,7 @@
  * `baseUrl` explicito, igual que `RENDER_BASE_URL` en el renderer Playwright.
  */
 import { prisma } from "@/lib/prisma";
-import { generatePropertyTexts } from "@/lib/text-engine";
+import { generatePropertyTexts } from "@/niches/inmobiliaria/text-engine";
 import { applyHeadlineOverride } from "../apply-text-override";
 import brandPresetsData from "../brand-presets.json";
 import {

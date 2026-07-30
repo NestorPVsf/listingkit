@@ -17,6 +17,16 @@ export default function PreviewLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es">
+      <head>
+        {/*
+          El token de render viaja en la URL. Sin esto, la politica por defecto
+          (`strict-origin-when-cross-origin`) manda la URL COMPLETA —token
+          incluido— en la cabecera Referer de cada foto que carga la pieza
+          (`/api/assets/...`), y de ahi al access log. Detectado en la review
+          cross-model del control de acceso.
+        */}
+        <meta name="referrer" content="no-referrer" />
+      </head>
       <body style={{ margin: 0, padding: 0, border: 0, minWidth: 0, minHeight: 0 }}>
         {children}
       </body>

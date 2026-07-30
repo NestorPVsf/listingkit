@@ -34,12 +34,12 @@ del cliente, no del sistema.
 
 | Comprobación | Resultado |
 |---|---|
-| `npx vitest run` | **273 pasan / 273** (21 ficheros) |
+| `npx vitest run` | **283 pasan / 283** (21 ficheros) |
 | `npx playwright test` | **9 pasan / 9** (flujo completo por UI + render real de las 6 piezas) |
 | `npx tsc --noEmit` | **0 errores** |
 | `npm run build` | **exit 0**, 21 rutas |
 
-De esos 273 unitarios, **10 ficheros son de seguridad** (`tests/security/`) y existen porque
+De esos 283 unitarios, **10 ficheros son de seguridad** (`tests/security/`) y existen porque
 cada uno corresponde a un agujero real que se encontró y se cerró, no a una casilla de
 cobertura:
 
@@ -102,6 +102,28 @@ Dos pasadas independientes sobre el código terminado:
 | F-14 | `/preview/*` era DEV-only y Playwright captura de esa ruta | **Toda** la generación visual fallaba en producción: el único runtime operativo era `next dev` |
 | QUALITY | 4 copias del mapeo a vista pública, ya divergentes | Es *la* allowlist de privacidad; mantenerla en 4 sitios es cuestión de tiempo |
 
+### Tercera pasada: revisión cross-model del control de acceso
+
+El token de render (F-14) se auditó aparte con un modelo distinto, porque un
+control de acceso escrito por el mismo modelo que lo diseñó no es una segunda
+opinión. Veredicto del núcleo criptográfico: correcto — HMAC-SHA256 bien
+construido, alcance cubierto, `timingSafeEqual`, sin length-extension aplicable,
+verificación antes de tocar Prisma. **Sin hallazgos críticos ni altos.**
+
+Cinco hallazgos medios y bajos, todos aplicados:
+
+| Hallazgo | Qué se hizo |
+|---|---|
+| El token viaja en la URL y se reenvía en el `Referer` hacia `/api/assets/…` | `Referrer-Policy: no-referrer` en la ruta de render y TTL de 5 → 2 min |
+| `RENDER_PREVIEW_SECRET=x` se aceptaba | Mínimo de 32 caracteres, y falla al arrancar en vez de fingir que protege |
+| Se colaban tokens no canónicos (`1.78e12`, ceros delante, sufijos tras la firma) | Forma canónica exigida por regex + tope de caducidad |
+| `brandId` cambiaba el render y no iba firmado | Se ignora en producción; manda la marca de la propiedad |
+| **Los tests solo probaban criptografía**: borrar el control de la página dejaba la suite verde con la ruta abierta | La decisión se extrajo a `isPreviewAccessAllowed`, una función pura con 6 casos cubiertos |
+
+Ese último es el que más valía. También destapó que dos casos de mi propia
+batería usaban una caducidad del año 2001, así que se rechazaban por caducados
+y **nunca llegaban a ejercitar el parser de firma** que decían probar.
+
 ### Descartado con evidencia
 
 Dos hallazgos resultaron ser **falsos positivos**, y se comprobó antes de tocar código sano:
@@ -159,10 +181,20 @@ trabajar en local; para dejarlo abierto en internet hace falta la capa de auth.
   `entityRevision` está fijo en `1`.
 - **Cuotas** (F-07/F-09): hay límite por fichero, no acumulado. El ZIP se construye entero en
   memoria. Un operador legítimo no lo nota; un abuso deliberado, sí.
-- **Acoplamiento en `lib/infrastructure/`**: el motor está limpio, pero `email-renderer`,
-  `jszip-package-builder`, `create-app` y `text-engine` **importan del vertical inmobiliario**
-  y consultan `prisma.property` directamente. Es lo que impide que el nicho dental llegue del
-  job al PNG. Es la primera deuda a pagar antes de vender el segundo vertical.
+- **Acoplamiento en `lib/infrastructure/`**: **resuelto**. `email-renderer` recibe un
+  compositor, el empaquetador ZIP recibe un plan por `nicheId` (lo que además cierra F-13,
+  la mezcla de datos entre nichos), `sanitizeFileName`/`photoUploadSchema` bajaron a
+  infraestructura y el generador de copy inmobiliario subió al nicho. Hoy la única capa de
+  `lib/` que importa un vertical es la raíz de composición, que es justo lo que la ADR
+  permite, y hay un test que lo vigila fichero a fichero.
+- **Replay del token de render**: dentro de su ventana de 2 minutos, una URL
+  filtrada se puede repetir. No hay nonce ni consumo único — con la app sin
+  autenticación, ese no es el eslabón débil, pero queda dicho.
+- **Hueco de prueba conocido**: no hay test automático que arranque un build de
+  producción y compruebe la ruta de render cerrada. La política está cubierta
+  como función pura, y el comportamiento real se verificó a mano contra
+  `next start` (sin token 404, token inválido 404, demo 404, generación 6/6).
+  Un test E2E en modo producción sigue pendiente.
 - **Validación del texto editado**: detecta el copia-pega de la dirección, no una reescritura
   a mano ("c/ Secreta doce"). Es una red, no una garantía matemática.
 

@@ -36,7 +36,14 @@
  */
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
-import { jszipPackageBuilder } from "@/lib/infrastructure/package/jszip-package-builder";
+import { createJszipPackageBuilder } from "@/lib/infrastructure/package/jszip-package-builder";
+import { inmobiliariaPackagePlan } from "@/niches/inmobiliaria/package/plan";
+
+// El empaquetador ya no es un singleton con el vertical dentro: se le pasa el
+// plan del nicho, resuelto por `job.nicheId`.
+const jszipPackageBuilder = createJszipPackageBuilder({
+  inmobiliaria: inmobiliariaPackagePlan,
+});
 import type { RenderJob } from "@/lib/engine/contracts";
 
 const PRIVATE_ADDRESS_SENTINEL = "SENTINEL-PRIVATE-4f9c2b1a";

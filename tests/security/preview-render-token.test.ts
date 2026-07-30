@@ -11,6 +11,7 @@
  */
 import { describe, expect, it } from "vitest";
 import {
+  isPreviewAccessAllowed,
   mintPreviewToken,
   verifyPreviewToken,
 } from "@/lib/render-access/preview-token";
@@ -39,13 +40,13 @@ describe("token de render — el renderer entra, un tercero no", () => {
     expect(verifyPreviewToken(token, OTHER_PIECE)).toBe(false);
   });
 
-  it("caduca (5 min), muy por encima del techo de 90 s de una captura", () => {
+  it("caduca a los 2 min, por encima del techo de 90 s de una captura", () => {
     const now = 1_785_000_000_000;
     const token = mintPreviewToken(SCOPE, now);
 
     expect(verifyPreviewToken(token, SCOPE, now + 90_000)).toBe(true);
-    expect(verifyPreviewToken(token, SCOPE, now + 4 * 60_000)).toBe(true);
-    expect(verifyPreviewToken(token, SCOPE, now + 6 * 60_000)).toBe(false);
+    expect(verifyPreviewToken(token, SCOPE, now + 119_000)).toBe(true);
+    expect(verifyPreviewToken(token, SCOPE, now + 121_000)).toBe(false);
   });
 
   it("rechaza una caducidad manipulada (la firma la cubre)", () => {
@@ -55,21 +56,61 @@ describe("token de render — el renderer entra, un tercero no", () => {
 
     // Alargar la vida del token a mano no cuela: la caducidad esta firmada.
     const estirado = `${now + 999 * 60_000}.${firma}`;
-    expect(verifyPreviewToken(estirado, SCOPE, now + 10 * 60_000)).toBe(false);
+    expect(verifyPreviewToken(estirado, SCOPE, now + 60_000)).toBe(false);
   });
 
   it("rechaza basura, firmas cortas y formatos raros", () => {
+    // OJO: la caducidad tiene que ser FUTURA en todos estos casos. La version
+    // anterior de este test usaba 999999999999 (año 2001), asi que el token se
+    // rechazaba por caducado y nunca se ejercitaba el parser de la firma — lo
+    // señalo la review cross-model, y es un test que tranquilizaba sin probar.
+    const vivo = Date.now() + 60_000;
     for (const malo of [
       "sin-punto",
       ".",
       ".abcdef",
-      "999999999999.",
-      "999999999999.zz",
-      "999999999999.00",
-      `${Date.now() + 60_000}.${"a".repeat(64)}`,
+      `${vivo}.`,
+      `${vivo}.zz`,
+      `${vivo}.00`,
+      `${vivo}.${"a".repeat(63)}`,
+      `${vivo}.${"a".repeat(65)}`,
+      `${vivo}.${"A".repeat(64)}`,
+      `${vivo}.${"a".repeat(64)}`,
     ]) {
       expect(verifyPreviewToken(malo, SCOPE), `deberia rechazar ${malo}`).toBe(false);
     }
+  });
+
+  it("exige forma canonica: sin sufijos, exponentes, ceros delante ni espacios", () => {
+    const now = 1_785_000_000_000;
+    const token = mintPreviewToken(SCOPE, now);
+    const [caducidad, firma] = token.split(".") as [string, string];
+
+    const variantes = [
+      `${token}.sufijo`,              // Buffer.from(hex) ignoraba la cola
+      `${token}zz`,
+      ` ${token}`,
+      `${token} `,
+      `0${caducidad}.${firma}`,       // cero a la izquierda
+      `+${caducidad}.${firma}`,
+      `${Number(caducidad).toExponential()}.${firma}`,
+      `${caducidad}.${firma.toUpperCase()}`,
+    ];
+    for (const variante of variantes) {
+      expect(
+        verifyPreviewToken(variante, SCOPE, now + 1_000),
+        `deberia rechazar ${variante}`,
+      ).toBe(false);
+    }
+  });
+
+  it("rechaza una caducidad mas larga de la que este servidor acuña", () => {
+    // No es forjable (va firmada), pero acota el daño si el secreto se filtra.
+    const now = 1_785_000_000_000;
+    expect(verifyPreviewToken(mintPreviewToken(SCOPE, now), SCOPE, now)).toBe(true);
+    expect(
+      verifyPreviewToken(mintPreviewToken(SCOPE, now + 60 * 60_000), SCOPE, now),
+    ).toBe(false);
   });
 
   it("dos tokens de la misma pieza no son el mismo string (llevan caducidad)", () => {
@@ -78,5 +119,99 @@ describe("token de render — el renderer entra, un tercero no", () => {
     expect(a).not.toBe(b);
     expect(verifyPreviewToken(a, SCOPE, 1_785_000_000_001)).toBe(true);
     expect(verifyPreviewToken(b, SCOPE, 1_785_000_060_001)).toBe(true);
+  });
+});
+
+/**
+ * La politica de acceso, caso a caso.
+ *
+ * Nace del hallazgo mas afilado de la review cross-model: los tests de arriba
+ * solo prueban criptografia, asi que borrar el control de la page —o mover la
+ * consulta a Prisma por delante— dejaba la suite en verde con la ruta abierta.
+ * Sacando la decision a una funcion pura, al menos la politica esta cubierta.
+ *
+ * Lo que sigue SIN cubrir automaticamente: que la page llame a esta funcion
+ * antes de tocar datos. Se verifico a mano contra `next start` (404 sin token,
+ * 404 con token invalido, 404 en demo, 200 con token valido) y esta anotado
+ * como hueco en AUDIT.md.
+ */
+describe("isPreviewAccessAllowed — politica de la ruta de render", () => {
+  const AHORA = 1_785_000_000_000;
+  const tokenValido = mintPreviewToken(SCOPE, AHORA);
+
+  const enProduccion = (extra: Record<string, unknown> = {}) => ({
+    isProduction: true,
+    isDemo: false,
+    pieceId: SCOPE.pieceId,
+    propertyId: SCOPE.propertyId,
+    token: tokenValido,
+    ...extra,
+  });
+
+  it("en produccion deja pasar solo con un token valido para ese alcance", () => {
+    expect(isPreviewAccessAllowed(enProduccion(), AHORA + 1_000)).toBe(true);
+  });
+
+  it("en produccion cierra sin token, con token de otra propiedad y caducado", () => {
+    expect(isPreviewAccessAllowed(enProduccion({ token: undefined }), AHORA)).toBe(false);
+    expect(isPreviewAccessAllowed(enProduccion({ token: "" }), AHORA)).toBe(false);
+    expect(
+      isPreviewAccessAllowed(enProduccion({ propertyId: "otra-propiedad" }), AHORA),
+    ).toBe(false);
+    expect(isPreviewAccessAllowed(enProduccion({ pieceId: "ficha-pdf" }), AHORA)).toBe(false);
+    expect(isPreviewAccessAllowed(enProduccion(), AHORA + 5 * 60_000)).toBe(false);
+  });
+
+  it("en produccion el modo demo esta cerrado, aunque venga con token", () => {
+    expect(isPreviewAccessAllowed(enProduccion({ isDemo: true }), AHORA + 1_000)).toBe(false);
+  });
+
+  it("en produccion exige propertyId: sin el no hay alcance que firmar", () => {
+    expect(
+      isPreviewAccessAllowed(enProduccion({ propertyId: undefined }), AHORA + 1_000),
+    ).toBe(false);
+  });
+
+  it("en desarrollo queda abierta a proposito (superficie de diseño)", () => {
+    expect(
+      isPreviewAccessAllowed({
+        isProduction: false,
+        isDemo: true,
+        pieceId: SCOPE.pieceId,
+      }),
+    ).toBe(true);
+    expect(
+      isPreviewAccessAllowed({
+        isProduction: false,
+        isDemo: false,
+        pieceId: SCOPE.pieceId,
+        propertyId: SCOPE.propertyId,
+      }),
+    ).toBe(true);
+  });
+});
+
+describe("secreto configurado", () => {
+  it("rechaza un RENDER_PREVIEW_SECRET debil en vez de fingir que protege", () => {
+    const previo = process.env.RENDER_PREVIEW_SECRET;
+    process.env.RENDER_PREVIEW_SECRET = "x";
+    try {
+      expect(() => mintPreviewToken(SCOPE)).toThrow(/RENDER_PREVIEW_SECRET_TOO_WEAK/);
+    } finally {
+      if (previo === undefined) delete process.env.RENDER_PREVIEW_SECRET;
+      else process.env.RENDER_PREVIEW_SECRET = previo;
+    }
+  });
+
+  it("acepta un secreto de longitud suficiente y firma de forma estable", () => {
+    const previo = process.env.RENDER_PREVIEW_SECRET;
+    process.env.RENDER_PREVIEW_SECRET = "a".repeat(32);
+    try {
+      const token = mintPreviewToken(SCOPE, 1_785_000_000_000);
+      expect(verifyPreviewToken(token, SCOPE, 1_785_000_001_000)).toBe(true);
+    } finally {
+      if (previo === undefined) delete process.env.RENDER_PREVIEW_SECRET;
+      else process.env.RENDER_PREVIEW_SECRET = previo;
+    }
   });
 });

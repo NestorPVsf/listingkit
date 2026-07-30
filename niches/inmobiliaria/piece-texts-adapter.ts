@@ -1,4 +1,4 @@
-import type { PropertyTextBundle } from "@/lib/text-engine";
+import type { PropertyTextBundle } from "@/niches/inmobiliaria/text-engine";
 import { formatPriceLabel } from "@/lib/text-engine/compose";
 import type { PublicPropertyView } from "./public-view";
 import { buildFeatureList } from "./text-labels";

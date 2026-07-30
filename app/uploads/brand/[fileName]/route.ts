@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { sanitizeFileName } from "@/niches/inmobiliaria/schema";
+import { sanitizeFileName } from "@/lib/infrastructure/files/upload-contract";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

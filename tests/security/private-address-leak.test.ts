@@ -15,7 +15,7 @@
  * pública.
  */
 import { describe, expect, it } from "vitest";
-import { generatePropertyTexts } from "@/lib/text-engine";
+import { generatePropertyTexts } from "@/niches/inmobiliaria/text-engine";
 import { propertyTextBundleToPieceTexts } from "@/niches/inmobiliaria/piece-texts-adapter";
 import { renderPropertyEmail } from "@/niches/inmobiliaria/email/render-email";
 import {

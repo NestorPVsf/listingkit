@@ -5,7 +5,7 @@ import path from "node:path";
 import sharp from "sharp";
 import { redirect } from "next/navigation";
 import presetsFile from "@/niches/inmobiliaria/brand-presets.json";
-import { sanitizeFileName } from "@/niches/inmobiliaria/schema";
+import { sanitizeFileName } from "@/lib/infrastructure/files/upload-contract";
 import {
   brandConfigSchema,
   brandPresetSchema,

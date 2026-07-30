@@ -45,7 +45,7 @@
  * - Sin zona/distrito, ningún texto deja huecos tipo "  ," o ", ,".
  */
 import { describe, expect, it } from "vitest";
-import { generatePropertyTexts } from "@/lib/text-engine";
+import { generatePropertyTexts } from "@/niches/inmobiliaria/text-engine";
 import type { Property } from "@/niches/inmobiliaria/public-view";
 import { toPublicPropertyView } from "@/niches/inmobiliaria/public-view";
 

@@ -6,7 +6,7 @@ import type {
 } from "@/lib/engine/ports/video-storyboard";
 import { resolveStoredAudioAssetPath } from "@/lib/infrastructure/files/local-asset-store";
 import { prisma } from "@/lib/prisma";
-import { generatePropertyTexts } from "@/lib/text-engine";
+import { generatePropertyTexts } from "@/niches/inmobiliaria/text-engine";
 import brandPresetsData from "../brand-presets.json";
 import {
   brandConfigSchema,

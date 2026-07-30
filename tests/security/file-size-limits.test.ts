@@ -1,13 +1,13 @@
 /**
  * Paso 6.1 del PLAN.md — límites de tamaño/tipo en la subida de fotos
- * (`photoUploadSchema`, niches/inmobiliaria/schema.ts). Regla dura #6 de
+ * (`photoUploadSchema`, lib/infrastructure/files/upload-contract.ts). Regla dura #6 de
  * spec.md / plan.md: "Fotos grandes agotan memoria" se mitiga con límite
  * 10MB + dimensiones máximas; este archivo verifica el límite de bytes en
  * el schema Zod, que es la primera línea de defensa antes de que Sharp
  * toque el buffer.
  */
 import { describe, expect, it } from "vitest";
-import { photoUploadSchema } from "@/niches/inmobiliaria/schema";
+import { photoUploadSchema } from "@/lib/infrastructure/files/upload-contract";
 
 const TEN_MB = 10 * 1024 * 1024;
 
