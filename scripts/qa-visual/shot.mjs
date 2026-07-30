@@ -1,0 +1,11 @@
+import { chromium } from "playwright";
+const url = process.argv[2];
+const out = process.argv[3];
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1200, height: 1600 } });
+await page.goto(url, { waitUntil: "networkidle" });
+await page.waitForSelector("[data-piece-canvas]", { state: "visible" });
+await page.evaluate(() => document.fonts.ready);
+await page.screenshot({ path: out, fullPage: true });
+await browser.close();
+console.log("saved", out);

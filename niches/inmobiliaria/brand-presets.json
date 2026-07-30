@@ -1,0 +1,147 @@
+{
+  "$schema": "InmoContent OS brand presets — nicho inmobiliaria",
+  "version": "1.0.0",
+  "default": "editorial-crema",
+  "presets": [
+    {
+      "id": "editorial-crema",
+      "nombre": "Default — Editorial cálido",
+      "esDefault": true,
+      "descripcion": "Fondo crema, texto negro cálido, naranja terracota como acento principal y verde bosque como secundario; editorial limpio y moderno.",
+      "colores": {
+        "background": "#FAF7F0",
+        "surface": "#FFFFFF",
+        "text": "#1A1815",
+        "textMuted": "#6B6558",
+        "primary": "#C1440E",
+        "secondary": "#2F5D3A",
+        "onPrimary": "#FFFFFF",
+        "border": "#E5DFD0"
+      },
+      "contrasteAA": {
+        "textSobreBackground": { "ratio": "14.5:1 (aprox., #1A1815 sobre #FAF7F0)", "cumple": true },
+        "primarySobreBackground": { "ratio": "4.78:1 (#C1440E sobre #FAF7F0, uso como texto/enlace)", "cumple": true },
+        "onPrimarySobrePrimary": { "ratio": "5.12:1 (#FFFFFF sobre #C1440E)", "cumple": true }
+      },
+      "tipografia": {
+        "display": { "familia": "Fraunces", "pesos": [600, 700], "uso": "titulares, precio destacado, nombre de propiedad" },
+        "body": { "familia": "Inter", "pesos": [400, 500, 600], "uso": "descripción, datos, CTA, footer legal" }
+      },
+      "radios": { "sm": "4px", "md": "8px", "lg": "12px" },
+      "espaciadoBase": "8px",
+      "escalaEspaciado": [4, 8, 12, 16, 24, 32, 48, 64],
+      "notasDeUso": {
+        "post-instagram": "Fondo crema o surface blanco a sangre completa; naranja SOLO en precio y CTA (badge o línea inferior); nunca fondo naranja completo — mantiene lectura editorial. Tipografía display para headline, body para metros/habitaciones.",
+        "story-instagram": "Igual que post pero con más aire vertical; naranja limitado al CTA final ('Más info' / swipe up). Verde secundario solo si hay 2º dato (ej. certificado energético).",
+        "carrusel-instagram": "Fondo alterna crema/blanco entre slides para dar ritmo sin romper marca; precio siempre en naranja en la primera y última slide.",
+        "ficha-pdf": "Fondo blanco (surface) para impresión/legibilidad; borde sutil #E5DFD0 en tablas de datos; naranja en headers de sección y precio; verde reservado para iconos de amenities (piscina, jardín, terraza).",
+        "email": "Fondo crema de fondo de página, bloque de contenido en surface blanco (max-width 600px); botón CTA con background primary + texto onPrimary; footer legal en textMuted."
+      }
+    },
+    {
+      "id": "urbana-moderna",
+      "nombre": "Urbana moderna",
+      "esDefault": false,
+      "descripcion": "Contemporáneo y geométrico: base blanco/negro de alto contraste con azul cobalto como acento y magenta como contra-acento contenido.",
+      "colores": {
+        "background": "#FFFFFF",
+        "surface": "#F4F5F7",
+        "text": "#101113",
+        "textMuted": "#55585E",
+        "primary": "#1D3FD1",
+        "secondary": "#C41E5D",
+        "onPrimary": "#FFFFFF",
+        "border": "#E1E3E8"
+      },
+      "contrasteAA": {
+        "textSobreBackground": { "ratio": "18.9:1 (#101113 sobre #FFFFFF)", "cumple": true },
+        "primarySobreBackground": { "ratio": "7.83:1 (#1D3FD1 sobre #FFFFFF, uso como texto/enlace)", "cumple": true },
+        "onPrimarySobrePrimary": { "ratio": "7.83:1 (#FFFFFF sobre #1D3FD1)", "cumple": true }
+      },
+      "tipografia": {
+        "display": { "familia": "Space Grotesk", "pesos": [500, 700], "uso": "titulares geométricos, precio, badges" },
+        "body": { "familia": "Inter", "pesos": [400, 500, 600], "uso": "datos, descripción, CTA" }
+      },
+      "radios": { "sm": "2px", "md": "4px", "lg": "8px" },
+      "espaciadoBase": "8px",
+      "escalaEspaciado": [4, 8, 16, 24, 32, 48, 64],
+      "notasDeUso": {
+        "post-instagram": "Bloques geométricos duros (sin degradado): franja azul cobalto sólida para el precio, tipografía Space Grotesk en mayúsculas para el headline. Magenta solo en un detalle puntual (badge 'Nuevo' o 'Reservado').",
+        "story-instagram": "Fondo blanco pleno, barra inferior azul cobalto sólida con CTA; nunca combinar azul y magenta a la vez en el mismo plano — alternar entre piezas para mantener la sensación de sistema, no de collage.",
+        "carrusel-instagram": "Cada slide numerada (01/05...) en Space Grotesk; azul cobalto marca la slide de precio, magenta marca la slide de contacto/CTA final.",
+        "ficha-pdf": "Layout de rejilla estricta (grid geométrico), líneas finas #E1E3E8 en vez de cajas con sombra; azul cobalto en headers de sección; magenta reservado para un único highlight (ej. 'Bajada de precio').",
+        "email": "Header con barra azul cobalto sólida (sin gradiente) y logo en blanco/negro; cuerpo blanco con texto #101113; CTA en azul cobalto con texto blanco."
+      }
+    },
+    {
+      "id": "lujo",
+      "nombre": "Lujo",
+      "esDefault": false,
+      "descripcion": "Sobrio y oscuro: fondo casi negro cálido, texto marfil, bronce contenido como acento y burdeos como contra-acento discreto; serif elegante.",
+      "colores": {
+        "background": "#14120F",
+        "surface": "#1D1A15",
+        "text": "#EDE6D9",
+        "textMuted": "#A79C89",
+        "primary": "#B08D57",
+        "secondary": "#6E2438",
+        "onPrimary": "#14120F",
+        "border": "#332D24"
+      },
+      "contrasteAA": {
+        "textSobreBackground": { "ratio": "15.06:1 (#EDE6D9 sobre #14120F)", "cumple": true },
+        "primarySobreBackground": { "ratio": "6.04:1 (#B08D57 sobre #14120F, uso como texto/enlace/label)", "cumple": true },
+        "onPrimarySobrePrimary": { "ratio": "6.04:1 (#14120F sobre #B08D57)", "cumple": true }
+      },
+      "tipografia": {
+        "display": { "familia": "Playfair Display", "pesos": [600, 700], "uso": "titulares, nombre de propiedad — SOLO tamaños grandes (>=28px), el serif fino pierde legibilidad en cuerpos pequeños" },
+        "body": { "familia": "Work Sans", "pesos": [300, 400, 500], "uso": "descripción, datos, CTA, footer legal — contraste deliberado serif/sans" }
+      },
+      "radios": { "sm": "0px", "md": "2px", "lg": "4px" },
+      "espaciadoBase": "8px",
+      "escalaEspaciado": [8, 16, 24, 40, 64, 96],
+      "notasDeUso": {
+        "post-instagram": "Fondo #14120F a sangre completa, foto con velo oscuro sutil (overlay negro 10-15% para legibilidad de texto, NUNCA degradado de color); precio y CTA en bronce; nombre de propiedad en Playfair Display grande y centrado.",
+        "story-instagram": "Igual tratamiento oscuro; espaciado generoso (escala 40/64) para sensación de exclusividad — evitar llenar el encuadre, dejar aire.",
+        "carrusel-instagram": "Numeración de slide discreta en textMuted; bronce solo en precio y en un micro-detalle por slide (línea fina bajo el titular). Burdeos reservado para UNA slide de cierre/contacto, nunca repetido.",
+        "ficha-pdf": "Fondo marfil (#EDE6D9 invertido a superficie clara si la agencia prefiere impresión económica) o fondo oscuro fiel a marca si es PDF digital; bronce en líneas separadoras y precio; burdeos únicamente en un sello/badge tipo 'Exclusiva'.",
+        "email": "Fondo del email oscuro (#14120F) con bloque de contenido en surface (#1D1A15); CTA con background bronce + texto onPrimary oscuro; evitar burdeos en botones (falla contraste sobre fondo oscuro como texto — solo como borde o icono)."
+      }
+    },
+    {
+      "id": "cercana-familiar",
+      "nombre": "Cercana y familiar",
+      "esDefault": false,
+      "descripcion": "Cálido y redondeado: fondo marfil rosado, terracota profundo como acento principal y verde-azulado suave como secundario; accesible y cercano.",
+      "colores": {
+        "background": "#FEF6EC",
+        "surface": "#FFFFFF",
+        "text": "#2B211A",
+        "textMuted": "#7A6B5D",
+        "primary": "#B84826",
+        "secondary": "#357064",
+        "onPrimary": "#FFFFFF",
+        "border": "#EEE0CE"
+      },
+      "contrasteAA": {
+        "textSobreBackground": { "ratio": "14.68:1 (#2B211A sobre #FEF6EC)", "cumple": true },
+        "primarySobreBackground": { "ratio": "4.91:1 (#B84826 sobre #FEF6EC, uso como texto/enlace)", "cumple": true },
+        "onPrimarySobrePrimary": { "ratio": "5.26:1 (#FFFFFF sobre #B84826)", "cumple": true }
+      },
+      "tipografia": {
+        "display": { "familia": "Fredoka", "pesos": [500, 600], "uso": "titulares, precio, nombre de propiedad — terminales redondeados, tono cercano" },
+        "body": { "familia": "Nunito Sans", "pesos": [400, 600, 700], "uso": "descripción, datos, CTA, footer legal — misma familia de terminales redondeados que el display" }
+      },
+      "radios": { "sm": "12px", "md": "20px", "lg": "28px" },
+      "espaciadoBase": "8px",
+      "escalaEspaciado": [8, 16, 24, 32, 48],
+      "notasDeUso": {
+        "post-instagram": "Tarjetas con esquinas muy redondeadas (radio lg) para el bloque de precio/datos sobre la foto; terracota como fondo de badge de precio, nunca como fondo completo del post.",
+        "story-instagram": "Botón CTA tipo 'pill' (radio lg) en terracota con texto blanco; verde-azulado como icono de amenity (piscina, terraza) en vez de texto.",
+        "carrusel-instagram": "Esquinas redondeadas consistentes en todas las slides; terracota en headline del precio, verde-azulado en chip de 'zona' o 'tipo de vivienda'.",
+        "ficha-pdf": "Fondo blanco (surface) con tarjetas de datos en radio md y borde suave #EEE0CE; terracota en CTA y precio; verde-azulado en iconos de características — mantiene calidez sin saturar el documento.",
+        "email": "Fondo marfil rosado de página, contenido en surface blanco con esquinas redondeadas (radio md); botón CTA pill en terracota; footer con textMuted y icono de contacto en verde-azulado."
+      }
+    }
+  ]
+}

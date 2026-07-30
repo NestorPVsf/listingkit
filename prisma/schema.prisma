@@ -1,0 +1,157 @@
+// Prisma 7.9.1 — SQLite. Ver docs/architecture/niche-engine.md:
+// "La persistencia v1 puede conservar tablas especificas como Property, porque
+// necesita consultas e indices de negocio claros. Esa tabla no pertenece al
+// motor: un adaptador del nicho la transforma a EntityInput."
+//
+// Los campos espejan niches/inmobiliaria/schema.ts (propertyInputSchema).
+// SQLite no soporta arrays nativos ni enums: highlights/explicitlyAllowedClaims
+// van como Json (TEXT), y los enums de dominio (operation, propertyType,
+// condition, energyCertificateRating) se validan en la capa Zod, no aqui.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Brand {
+  id          String   @id @default(cuid())
+  nombre      String
+  logo        String
+  colores     Json
+  tipografia  Json
+  web         String?
+  telefono    String?
+  email       String?
+  instagram   String?
+  ctaHabitual String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  properties Property[]
+}
+
+model Property {
+  id      String @id @default(cuid())
+  brandId String?
+  brand   Brand? @relation(fields: [brandId], references: [id])
+
+  internalName  String
+  operation     String // "sale" | "rent"
+  propertyType  String // "apartment" | "house" | "penthouse" | "studio" | "commercial" | "land"
+  price         Float
+  currency      String  @default("EUR")
+  pricePeriod   String? // "month" (solo alquiler)
+  city          String
+  district      String?
+  publicAddress String?
+  privateAddress String // NUNCA se serializa a piezas publicas (spec.md regla dura #1)
+
+  builtAreaM2   Float
+  usableAreaM2  Float?
+  bedrooms      Int
+  bathrooms     Int
+  floor         String?
+
+  elevator    Boolean @default(false)
+  terrace     Boolean @default(false)
+  balcony     Boolean @default(false)
+  garage      Boolean @default(false)
+  storageRoom Boolean @default(false)
+  pool        Boolean @default(false)
+  garden      Boolean @default(false)
+
+  condition        String // "new" | "excellent" | "good" | "renovation-needed"
+  constructionYear Int?
+
+  energyCertificateRating     String? // A-G | "en-tramite" | "exento"
+  energyCertificateIdentifier String?
+
+  description String
+  highlights  Json // string[] (max 5)
+  cta         String
+  listingUrl  String?
+
+  agentName    String
+  agentPhone   String
+  agentEmail   String
+  agencyName   String
+  agencyWebsite String?
+
+  primaryPhotoAssetId     String?
+  musicAssetId            String?
+  narrationAssetId        String?
+  explicitlyAllowedClaims Json    @default("[]")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  photos          PropertyPhoto[]
+  generatedPieces GeneratedPiece[]
+  renderJobs      RenderJob[]
+
+  @@index([city])
+  @@index([operation])
+  @@index([brandId])
+}
+
+model PropertyPhoto {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  path   String // nombre de archivo ya sanitizado (sanitizeFileName)
+  order  Int
+  esMain Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@unique([propertyId, order])
+  @@index([propertyId])
+}
+
+model GeneratedPiece {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  pieceKey     String // "property-sheet" | "instagram-post" | "instagram-carousel" | "instagram-story" | "property-email" | "vertical-video"
+  path         String
+  version      Int     @default(1)
+  editableText Json?
+  metadata     Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([propertyId])
+  @@index([propertyId, pieceKey])
+}
+
+model RenderJob {
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  nicheId       String @default("legacy")
+  entityRevision Int   @default(1)
+  status         String // "pending" | "rendering" | "done" | "partial" | "error"
+  request        Json   @default("{}")
+  bindings       Json   @default("{}")
+  tasks          Json   @default("[]")
+
+  // Solo se rellenan cuando status = "error" (spec.md: "error{causa, solucion, retry}")
+  errorCode     String?
+  errorCause    String?
+  errorSolution String?
+  retryable     Boolean @default(false)
+  errorTechnicalDetails String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([propertyId])
+  @@index([status])
+}

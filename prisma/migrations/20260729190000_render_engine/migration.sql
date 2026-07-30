@@ -1,0 +1,8 @@
+-- AlterTable
+ALTER TABLE "RenderJob" ADD COLUMN "nicheId" TEXT NOT NULL DEFAULT 'legacy';
+ALTER TABLE "RenderJob" ADD COLUMN "entityRevision" INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE "RenderJob" ADD COLUMN "request" JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE "RenderJob" ADD COLUMN "bindings" JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE "RenderJob" ADD COLUMN "tasks" JSONB NOT NULL DEFAULT '[]';
+ALTER TABLE "RenderJob" ADD COLUMN "errorCode" TEXT;
+ALTER TABLE "RenderJob" ADD COLUMN "errorTechnicalDetails" TEXT;

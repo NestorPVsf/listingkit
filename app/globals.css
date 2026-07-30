@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+/*
+ * Tokens de la UI de la app — preset editorial-crema, fuente unica de verdad
+ * en niches/inmobiliaria/brand-presets.json (ver .claude/design/DESIGN.md:
+ * "la UI de la app usa SIEMPRE editorial-crema"). No duplicar valores fuera
+ * de aqui salvo el propio JSON.
+ */
+:root {
+  --background: #faf7f0;
+  --surface: #ffffff;
+  --foreground: #1a1815;
+  --foreground-muted: #6b6558;
+  --primary: #c1440e;
+  --secondary: #2f5d3a;
+  --on-primary: #ffffff;
+  --border: #e5dfd0;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-on-primary: var(--on-primary);
+  --color-border: var(--border);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
