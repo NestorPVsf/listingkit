@@ -35,7 +35,7 @@ del cliente, no del sistema.
 | Comprobación | Resultado |
 |---|---|
 | `npx vitest run` | **283 pasan / 283** (21 ficheros) |
-| `npx playwright test` | **9 pasan / 9** (flujo completo por UI + render real de las 6 piezas) |
+| `npx playwright test` | **14 pasan / 14** — 9 contra `next dev` (flujo por UI + render real de las 6 piezas) y **5 contra un build de producción** (`next build && next start`) |
 | `npx tsc --noEmit` | **0 errores** |
 | `npm run build` | **exit 0**, 21 rutas |
 
@@ -124,6 +124,31 @@ Ese último es el que más valía. También destapó que dos casos de mi propia
 batería usaban una caducidad del año 2001, así que se rechazaban por caducados
 y **nunca llegaban a ejercitar el parser de firma** que decían probar.
 
+### El E2E que faltaba: modo producción
+
+Los dos incidentes más caros de este proyecto pasaron **con toda la suite en
+verde**, y por la misma razón: los E2E arrancaban `next dev`.
+
+1. `/preview/*` devolvía 404 en producción → toda la generación visual fallaba.
+2. El primer arreglo guardaba el secreto en una variable de módulo, y en un
+   build de producción Next da instancias distintas a la página y al route
+   handler → seguía fallando, verde igualmente.
+
+Ahora `npx playwright test` levanta **dos servidores**: el de desarrollo y un
+build de producción real en el puerto 3100. Cinco tests comprueban las dos
+mitades que importan — que la ruta **sigue funcionando** (token válido → 200 con
+la pieza montada, y generación 6/6) y que está **cerrada** (sin token, token
+inventado, caducado, de otra propiedad, de otra pieza, y `?demo=1` → 404).
+
+Ese test se validó contra el propio bug: desactivando el control de acceso,
+**3 de los 5 fallan**. Un test de regresión que no se ha visto fallar no es un
+test de regresión.
+
+De paso destapó un detalle de Next que habría sido un falso hallazgo: una
+petición RSC a una ruta que llama a `notFound()` responde **200**, porque el
+not-found viaja dentro del payload. No hay fuga —el payload no trae ni la pieza
+ni los datos— pero el assert correcto es sobre el contenido, no sobre el status.
+
 ### Descartado con evidencia
 
 Dos hallazgos resultaron ser **falsos positivos**, y se comprobó antes de tocar código sano:
@@ -190,11 +215,6 @@ trabajar en local; para dejarlo abierto en internet hace falta la capa de auth.
 - **Replay del token de render**: dentro de su ventana de 2 minutos, una URL
   filtrada se puede repetir. No hay nonce ni consumo único — con la app sin
   autenticación, ese no es el eslabón débil, pero queda dicho.
-- **Hueco de prueba conocido**: no hay test automático que arranque un build de
-  producción y compruebe la ruta de render cerrada. La política está cubierta
-  como función pura, y el comportamiento real se verificó a mano contra
-  `next start` (sin token 404, token inválido 404, demo 404, generación 6/6).
-  Un test E2E en modo producción sigue pendiente.
 - **Validación del texto editado**: detecta el copia-pega de la dirección, no una reescritura
   a mano ("c/ Secreta doce"). Es una red, no una garantía matemática.
 

@@ -195,10 +195,16 @@ Y el gate de arquitectura, que es el que protege la reutilización:
 rg -i "«nicho»|«entidad»" lib/engine
 ```
 
-**Verde no significa funcional.** Antes de dar el vertical por hecho, genera las
-piezas contra un `next start` real y mira los ficheros: tamaño, dimensiones y,
-en el vídeo, `ffprobe`. En v1 hubo un fix que pasaba todos los tests y seguía
-fallando en producción (§9, trampa 3).
+**Verde no significa funcional.** El proyecto `production` de
+`playwright.config.ts` levanta un `next build && next start` real: **añade ahí
+los casos de tu vertical**, no solo en el proyecto de desarrollo. Los dos bugs
+más caros de v1 pasaron con toda la suite en verde porque los E2E arrancaban
+`next dev` (§9, trampas 3 y 7).
+
+Y antes de dar el vertical por hecho, mira los ficheros generados: tamaño,
+dimensiones y, si hay vídeo, `ffprobe`. Un test de regresión que no te has visto
+fallar tampoco cuenta — desactiva a mano lo que protege y comprueba que se pone
+rojo.
 
 ---
 
@@ -231,7 +237,17 @@ fallando en producción (§9, trampa 3).
    el destinatario del email extrae la ubicación. La ingesta ya lo resuelve;
    no la puentees por rendimiento.
 
-6. **Un formateo no es un test.** `Intl.NumberFormat("es-ES")` no agrupa los
+6. **Una respuesta RSC de una ruta con `notFound()` devuelve 200**, no 404: Next
+   señaliza el not-found dentro del payload para que el cliente pinte el
+   boundary. Si escribes un test de control de acceso, afirma sobre el
+   contenido; el status solo sirve para la petición del documento.
+
+7. **Un test que solo cubre la parte fácil tranquiliza sin proteger.** En v1 los
+   tests del control de acceso probaban la criptografía pero no la decisión, así
+   que borrar el control de la página dejaba la suite verde con la ruta abierta.
+   Saca la política a una función pura y cúbrela caso a caso.
+
+8. **Un formateo no es un test.** `Intl.NumberFormat("es-ES")` no agrupa los
    millares de 4 dígitos (`2400`, no `2.400`). Comprueba la salida real antes de
    fijar la expectativa, o escribirás un test que documenta tu suposición.
 

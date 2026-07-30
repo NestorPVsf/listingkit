@@ -1,9 +1,24 @@
 import { defineConfig, devices } from "@playwright/test";
+import {
+  PROD_BASE_URL,
+  PROD_PORT,
+  PROD_PREVIEW_SECRET,
+} from "./tests/e2e/prod-server";
 
 /**
- * Config E2E — Fase 4.1 del PLAN.md. Los specs bajo tests/e2e/ ejercitan el
- * motor de render (imágenes + PDF) contra un endpoint del engine que AÚN NO
- * EXISTE (TDD): ver contrato documentado en cabecera de cada spec.
+ * Config E2E. Dos proyectos, porque hay dos cosas distintas que comprobar:
+ *
+ * - `chromium`: el producto contra `next dev`. Flujo de usuario y render real
+ *   de las seis piezas.
+ * - `production`: un build de produccion de verdad (`next build && next start`).
+ *   Existe porque la review cross-model del control de acceso puso el dedo en
+ *   la llaga: los tests solo probaban criptografia, asi que borrar el control
+ *   de la ruta de render dejaba la suite entera en verde con la ruta abierta.
+ *   Y porque el bug de F-14 —la generacion visual fallaba SOLO en produccion—
+ *   paso las dos suites sin despeinarse.
+ *
+ * Los dos corren por defecto: un test que hay que acordarse de lanzar no
+ * protege de nada.
  */
 export default defineConfig({
   testDir: "./tests/e2e",
@@ -22,13 +37,35 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
+      testIgnore: /prod-.*\.spec\.ts/,
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      name: "production",
+      testMatch: /prod-.*\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], baseURL: PROD_BASE_URL },
+    },
   ],
-  webServer: {
-    command: "npm run dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: "npm run dev",
+      url: "http://localhost:3000",
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+    {
+      // Build fresco siempre: reutilizar un servidor de produccion que quedo
+      // vivo de otra tanda daria un falso verde con codigo antiguo o con otro
+      // secreto.
+      command: `npm run build && npx next start -p ${PROD_PORT}`,
+      url: PROD_BASE_URL,
+      reuseExistingServer: false,
+      timeout: 240_000,
+      env: {
+        NODE_ENV: "production",
+        RENDER_BASE_URL: PROD_BASE_URL,
+        RENDER_PREVIEW_SECRET: PROD_PREVIEW_SECRET,
+      },
+    },
+  ],
 });
