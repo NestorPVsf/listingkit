@@ -64,6 +64,12 @@ export interface PreviewTokenScope {
   readonly pieceId: string;
   /** Entidad que se esta renderizando. */
   readonly propertyId: string;
+  /**
+   * Revision de la entidad con la que nacio el trabajo (F-06). Va FIRMADA y no
+   * solo en la URL: si no, cualquiera podria acallar el control de version
+   * cambiando un numero, y el juego de piezas volveria a poder salir mezclado.
+   */
+  readonly revision: number;
 }
 
 type RuntimeGlobal = typeof globalThis & {
@@ -94,7 +100,9 @@ function sign(scope: Readonly<PreviewTokenScope>, expiresAt: number): string {
     // en el fuente vuelve el fichero "binario" para git y rompe los diffs.
     // Se usa NUL y no un espacio porque no puede aparecer dentro de un id,
     // asi que dos campos distintos nunca producen la misma cadena firmada.
-    .update(`${scope.pieceId}\u0000${scope.propertyId}\u0000${expiresAt}`)
+    .update(
+      `${scope.pieceId}\u0000${scope.propertyId}\u0000${scope.revision}\u0000${expiresAt}`,
+    )
     .digest("hex");
 }
 
@@ -139,6 +147,8 @@ export interface PreviewAccessRequest {
   readonly pieceId: string;
   readonly propertyId?: string;
   readonly token?: string;
+  /** `rev` de la URL, ya convertido a numero (o `undefined` si no venia). */
+  readonly revision?: number;
 }
 
 /**
@@ -164,10 +174,16 @@ export function isPreviewAccessAllowed(
   // produccion es superficie sin ninguna razon de ser.
   if (request.isDemo) return false;
   if (!request.propertyId) return false;
+  // La revision va firmada, asi que tiene que llegar para poder verificar nada.
+  if (request.revision === undefined) return false;
 
   return verifyPreviewToken(
     request.token,
-    { pieceId: request.pieceId, propertyId: request.propertyId },
+    {
+      pieceId: request.pieceId,
+      propertyId: request.propertyId,
+      revision: request.revision,
+    },
     now,
   );
 }

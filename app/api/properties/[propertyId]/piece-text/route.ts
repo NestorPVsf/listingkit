@@ -78,13 +78,22 @@ export async function POST(
       ? (piece.metadata as Record<string, unknown>)
       : {};
 
-  await prisma.generatedPiece.update({
-    where: { id: piece.id },
-    data: {
-      editableText: { edited: text },
-      metadata: { ...previousMetadata, textOverride: text },
-    },
-  });
+  // F-06: el titular editado se aplica a TODAS las piezas de imagen/PDF al
+  // renderizar, asi que guardarlo cambia lo que sale por la impresora. Sube la
+  // revision en la misma transaccion para que una generacion en curso lo note.
+  await prisma.$transaction([
+    prisma.generatedPiece.update({
+      where: { id: piece.id },
+      data: {
+        editableText: { edited: text },
+        metadata: { ...previousMetadata, textOverride: text },
+      },
+    }),
+    prisma.property.update({
+      where: { id: propertyId },
+      data: { revision: { increment: 1 } },
+    }),
+  ]);
 
   return Response.json({ ok: true }, { status: 200 });
 }

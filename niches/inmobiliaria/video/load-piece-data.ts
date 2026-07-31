@@ -4,6 +4,7 @@ import type {
   VideoScene,
   VideoStoryboard,
 } from "@/lib/engine/ports/video-storyboard";
+import { assertEntityRevision } from "@/lib/engine/entity-revision";
 import { resolveStoredAudioAssetPath } from "@/lib/infrastructure/files/local-asset-store";
 import { prisma } from "@/lib/prisma";
 import { generatePropertyTexts } from "@/niches/inmobiliaria/text-engine";
@@ -156,6 +157,7 @@ function buildScenes({
 
 export async function loadVideoPieceData(
   entityId: string,
+  expectedRevision?: number,
 ): Promise<VideoStoryboard | null> {
   const property = await prisma.property.findUnique({
     where: { id: entityId },
@@ -164,6 +166,10 @@ export async function loadVideoPieceData(
   if (!property) {
     return null;
   }
+
+  // F-06: el video tampoco pasa por `/preview`. Mismo control de version, misma
+  // peticion que lee la fila.
+  assertEntityRevision(property.revision, expectedRevision);
 
   const view: PublicPropertyView = storedPropertyToPublicView(property);
   const brand: PieceBrand = property.brand

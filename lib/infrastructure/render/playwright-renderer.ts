@@ -128,15 +128,24 @@ function previewUrl(
   baseUrl: string,
   previewId: string,
   entityId: string,
+  entityRevision: number,
 ): string {
   const url = new URL(`/preview/${encodeURIComponent(previewId)}`, baseUrl);
   url.searchParams.set("propertyId", entityId);
   url.searchParams.set("brandId", "");
+  // F-06: la revision con la que nacio el trabajo. La ruta la contrasta con la
+  // fila viva y se niega a pintar si la propiedad cambio entre medias, que es
+  // lo que producia juegos de piezas con versiones mezcladas.
+  url.searchParams.set("rev", String(entityRevision));
   // F-14: la ruta de render ya no es DEV-only, asi que cada captura se
   // identifica con un token efimero ligado a esta pieza y esta propiedad.
   url.searchParams.set(
     "rt",
-    mintPreviewToken({ pieceId: previewId, propertyId: entityId }),
+    mintPreviewToken({
+      pieceId: previewId,
+      propertyId: entityId,
+      revision: entityRevision,
+    }),
   );
   return url.toString();
 }
@@ -169,10 +178,26 @@ async function captureTarget(
       height: target.height,
     });
   }
-  await page.goto(
-    previewUrl(baseUrl, target.previewId, job.entityId),
+  const response = await page.goto(
+    previewUrl(baseUrl, target.previewId, job.entityId, job.entityRevision),
     { waitUntil: "domcontentloaded" },
   );
+  // Un 404 aqui no es "la captura ha salido mal": la ruta se ha negado a pintar
+  // (la propiedad ya no existe, o cambio de version a mitad del trabajo). Sin
+  // esta comprobacion el flujo se iba a esperar el selector, agotaba los 30 s y
+  // acababa en un "revisa los assets y reintenta" que no describe nada — y
+  // ademas reintentable, asi que repetia el mismo fallo tres veces.
+  if (response && response.status() === 404) {
+    throw new EngineError({
+      code: "PREVIEW_NOT_AVAILABLE",
+      cause:
+        "La ruta de render rechazo la peticion: la propiedad cambio mientras se generaba, o ya no existe.",
+      solution:
+        "Vuelve a generar para obtener un juego de piezas coherente con los datos actuales.",
+      retryable: false,
+      taskStatus: "blocked",
+    });
+  }
   await waitUntilReady(page);
 
   if (target.kind === "image") {
@@ -279,6 +304,10 @@ async function createSession(
               retryable: true,
             });
           }
+          // Un EngineError ya trae su diagnostico: envolverlo en
+          // PLAYWRIGHT_CAPTURE_FAILED lo convertiria en "revisa los assets" y,
+          // peor, en reintentable.
+          if (error instanceof EngineError) throw error;
           throw new EngineError({
             code: "PLAYWRIGHT_CAPTURE_FAILED",
             cause: `No se pudo capturar la variante "${target.variant}".`,

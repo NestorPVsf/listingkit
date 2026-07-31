@@ -11,6 +11,7 @@
  * cliente de correo no tiene el contexto relativo de la app) — de ahi el
  * `baseUrl` explicito, igual que `RENDER_BASE_URL` en el renderer Playwright.
  */
+import { assertEntityRevision } from "@/lib/engine/entity-revision";
 import { prisma } from "@/lib/prisma";
 import { generatePropertyTexts } from "@/niches/inmobiliaria/text-engine";
 import { applyHeadlineOverride } from "../apply-text-override";
@@ -54,12 +55,17 @@ function findDefaultPreset(): BrandPreset {
 export async function loadEmailPieceData(
   entityId: string,
   baseUrl: string,
+  expectedRevision?: number,
 ): Promise<EmailPieceData | null> {
   const property = await prisma.property.findUnique({
     where: { id: entityId },
     include: { photos: { orderBy: { order: "asc" } }, brand: true },
   });
   if (!property) return null;
+
+  // F-06: el correo no pasa por `/preview`, asi que necesita su propio control
+  // de version. Va aqui, pegado a la lectura de la fila.
+  assertEntityRevision(property.revision, expectedRevision);
 
   const view: PublicPropertyView = storedPropertyToPublicView(property);
 

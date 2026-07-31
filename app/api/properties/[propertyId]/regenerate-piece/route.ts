@@ -105,6 +105,7 @@ export async function POST(
   try {
     // Persiste el texto editado ANTES de regenerar: el renderer de la pieza
     // lee el override mas reciente al componer los textos.
+    let revision = row.revision;
     if (textOverride !== undefined) {
       const latestPiece = await prisma.generatedPiece.findFirst({
         where: { propertyId, pieceKey },
@@ -116,20 +117,32 @@ export async function POST(
           typeof latestPiece.metadata === "object" && latestPiece.metadata !== null
             ? (latestPiece.metadata as Record<string, unknown>)
             : {};
-        await prisma.generatedPiece.update({
-          where: { id: latestPiece.id },
-          data: {
-            editableText: { edited: textOverride },
-            metadata: { ...previousMetadata, textOverride },
-          },
-        });
+        // F-06: igual que POST .../piece-text, guardar el override sube la
+        // revision. Y este job tiene que nacer con la revision NUEVA: es el
+        // propio endpoint quien acaba de cambiar la propiedad, asi que
+        // arrancarlo con la vieja lo condenaria a fallar el control de version.
+        const [, actualizada] = await prisma.$transaction([
+          prisma.generatedPiece.update({
+            where: { id: latestPiece.id },
+            data: {
+              editableText: { edited: textOverride },
+              metadata: { ...previousMetadata, textOverride },
+            },
+          }),
+          prisma.property.update({
+            where: { id: propertyId },
+            data: { revision: { increment: 1 } },
+            select: { revision: true },
+          }),
+        ]);
+        revision = actualizada.revision;
       }
     }
 
     const assets = await Promise.all(
       row.photos.map((photo) => getStoredAsset(photo.id)),
     );
-    const input = storedPropertyToEntityInput(row, assets);
+    const input = storedPropertyToEntityInput({ ...row, revision }, assets);
     const bindings = await application.engine.createBindings(input);
     const renderRequest: RenderRequest = {
       requestedPieceKeys: [pieceKey],

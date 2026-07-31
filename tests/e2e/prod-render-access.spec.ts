@@ -59,10 +59,10 @@ test.describe("Ruta de render en produccion — abierta al renderer, cerrada al 
     request,
   }) => {
     const propertyId = await crearPropiedad(request);
-    const token = mintPreviewToken({ pieceId: PIEZA, propertyId });
+    const token = mintPreviewToken({ pieceId: PIEZA, propertyId, revision: 1 });
 
     const response = await page.goto(
-      `/preview/${PIEZA}?propertyId=${propertyId}&rt=${token}`,
+      `/preview/${PIEZA}?propertyId=${propertyId}&rev=1&rt=${token}`,
     );
 
     expect(response?.status()).toBe(200);
@@ -76,18 +76,25 @@ test.describe("Ruta de render en produccion — abierta al renderer, cerrada al 
     request,
   }) => {
     const propertyId = await crearPropiedad(request);
-    const base = `/preview/${PIEZA}?propertyId=${propertyId}`;
+    const base = `/preview/${PIEZA}?propertyId=${propertyId}&rev=1`;
     const caducado = mintPreviewToken(
-      { pieceId: PIEZA, propertyId },
+      { pieceId: PIEZA, propertyId, revision: 1 },
       Date.now() - 10 * 60_000,
     );
     const deOtraPropiedad = mintPreviewToken({
       pieceId: PIEZA,
       propertyId: "otra-propiedad-cualquiera",
+      revision: 1,
     });
     const deOtraPieza = mintPreviewToken({
       pieceId: "ficha-pdf",
       propertyId,
+      revision: 1,
+    });
+    const deOtraRevision = mintPreviewToken({
+      pieceId: PIEZA,
+      propertyId,
+      revision: 2,
     });
 
     const casos: readonly (readonly [string, string])[] = [
@@ -97,6 +104,16 @@ test.describe("Ruta de render en produccion — abierta al renderer, cerrada al 
       ["token caducado", `${base}&rt=${caducado}`],
       ["token de otra propiedad", `${base}&rt=${deOtraPropiedad}`],
       ["token de otra pieza", `${base}&rt=${deOtraPieza}`],
+      ["token de otra revision", `${base}&rt=${deOtraRevision}`],
+      // Y al reves: token bueno, `rev` cambiado a mano en la URL.
+      [
+        "rev manipulado",
+        `/preview/${PIEZA}?propertyId=${propertyId}&rev=2&rt=${mintPreviewToken({
+          pieceId: PIEZA,
+          propertyId,
+          revision: 1,
+        })}`,
+      ],
     ];
 
     for (const [caso, url] of casos) {
@@ -109,6 +126,63 @@ test.describe("Ruta de render en produccion — abierta al renderer, cerrada al 
     }
   });
 
+  test("si la propiedad cambia, el render de la version anterior deja de servirse (F-06)", async ({
+    page,
+    request,
+  }) => {
+    // El defecto: los renderers releen la fila viva, asi que editar la
+    // propiedad a mitad de una generacion hacia que unas piezas salieran con
+    // los datos de antes y otras con los de despues. Sin ruido, sin aviso, y
+    // con el juego completo aparentando estar bien.
+    //
+    // Reproducirlo cronometrando una edicion contra un render de dos minutos
+    // seria un test que falla cuando le apetece. Esto comprueba lo mismo en el
+    // punto exacto donde se decide: la peticion que lee la fila y la pinta.
+    await request.post("/api/auth/session", {
+      data: { password: PROD_OPERATOR_PASSWORD },
+    });
+    // Las fotos se crean con `id: asset.id` (ver app/api/properties/route.ts),
+    // asi que los ids subidos sirven tal cual para reordenar.
+    const photoAssetIds = await uploadDemoPhotos(request);
+    const propertyId = await createDemoProperty(
+      request,
+      demoPropertyPayload({
+        photoAssetIds,
+        primaryPhotoAssetId: photoAssetIds[0]!,
+      }),
+    );
+    const url = (revision: number) =>
+      `/preview/${PIEZA}?propertyId=${propertyId}&rev=${revision}&rt=${mintPreviewToken({
+        pieceId: PIEZA,
+        propertyId,
+        revision,
+      })}`;
+
+    // Recien creada: revision 1, y la pieza se pinta.
+    expect((await page.goto(url(1)))?.status()).toBe(200);
+
+    // Reordenar las fotos cambia que foto sale en cada pieza — el caso real.
+    const invertidas = [...photoAssetIds].reverse();
+    const reorden = await request.post(
+      `/api/properties/${propertyId}/photo-order`,
+      { data: { orderedPhotoIds: invertidas, primaryPhotoId: invertidas[0] } },
+    );
+    expect(reorden.ok(), "no se pudo reordenar las fotos").toBe(true);
+
+    // Lo que importa: el trabajo que arranco con la revision 1 ya no puede
+    // pintar. Antes de F-06 esto devolvia 200 con los datos NUEVOS, y de ahi
+    // salia el juego mezclado.
+    expect(
+      (await page.goto(url(1)))?.status(),
+      "la revision vieja deberia estar cerrada",
+    ).toBe(404);
+
+    // Contraste: la version actual si sirve. Sin esto, el assert de arriba
+    // pasaria aunque la ruta hubiera quedado rota del todo.
+    expect((await page.goto(url(2)))?.status()).toBe(200);
+    await expect(page.locator("[data-piece-canvas]")).toBeVisible();
+  });
+
   test("el modo demo no existe en produccion", async ({ page }) => {
     const response = await page.goto(`/preview/${PIEZA}?demo=1`);
     expect(response?.status()).toBe(404);
@@ -116,7 +190,7 @@ test.describe("Ruta de render en produccion — abierta al renderer, cerrada al 
 
   test("la peticion RSC tampoco entrega la pieza sin token", async ({ request }) => {
     const propertyId = await crearPropiedad(request);
-    const url = `/preview/${PIEZA}?propertyId=${propertyId}`;
+    const url = `/preview/${PIEZA}?propertyId=${propertyId}&rev=1`;
 
     // La navegacion cliente de Next no pide el documento, pide el payload RSC.
     // Si el control estuviera solo en el render del HTML, esta via se colaria.
@@ -136,7 +210,7 @@ test.describe("Ruta de render en produccion — abierta al renderer, cerrada al 
 
     // Contraste: con token valido el payload SI trae la pieza. Sin esto, los
     // asserts de arriba pasarian aunque la ruta devolviese siempre vacio.
-    const token = mintPreviewToken({ pieceId: PIEZA, propertyId });
+    const token = mintPreviewToken({ pieceId: PIEZA, propertyId, revision: 1 });
     const conToken = await request.get(`${url}&rt=${token}`, {
       headers: { RSC: "1" },
     });

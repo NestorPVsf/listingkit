@@ -55,6 +55,18 @@ export async function POST(
 
   const primaryId = parsed.primaryPhotoId;
   await prisma.$transaction([
+    // Dos pasadas, y no por gusto: `@@unique([propertyId, order])` se comprueba
+    // sentencia a sentencia, asi que asignar los ordenes definitivos de uno en
+    // uno revienta en cuanto dos fotos se intercambian el sitio (la primera ya
+    // quiere el hueco que la segunda todavia ocupa). Es decir: reordenar
+    // fallaba en el caso mas normal de todos. Los negativos son un aparcadero
+    // seguro porque ningun orden real lo es.
+    ...parsed.orderedPhotoIds.map((id, index) =>
+      prisma.propertyPhoto.update({
+        where: { id },
+        data: { order: -(index + 1) },
+      }),
+    ),
     ...parsed.orderedPhotoIds.map((id, index) =>
       prisma.propertyPhoto.update({
         where: { id },
@@ -66,14 +78,16 @@ export async function POST(
         },
       }),
     ),
-    ...(primaryId
-      ? [
-          prisma.property.update({
-            where: { id: propertyId },
-            data: { primaryPhotoAssetId: primaryId },
-          }),
-        ]
-      : []),
+    // F-06: el orden de las fotos decide que foto sale en cada pieza, asi que
+    // esto ES un cambio de version aunque solo se toquen filas de PropertyPhoto.
+    // Va dentro de la misma transaccion: o cambia todo, o no cambia nada.
+    prisma.property.update({
+      where: { id: propertyId },
+      data: {
+        revision: { increment: 1 },
+        ...(primaryId ? { primaryPhotoAssetId: primaryId } : {}),
+      },
+    }),
   ]);
 
   return Response.json({ ok: true }, { status: 200 });

@@ -66,7 +66,10 @@ export function storedPropertyToEntityInput(
   return {
     nicheId: "inmobiliaria",
     entityId: row.id,
-    revision: 1,
+    // F-06: la revision real de la fila, no un 1 fijo. Es lo que permite
+    // detectar que la propiedad cambio a mitad de una generacion, y lo que hace
+    // que el `entityRevision` del manifiesto del ZIP diga la verdad.
+    revision: row.revision,
     locale: "es-ES",
     payload,
     assets,

@@ -16,9 +16,14 @@ import {
   verifyPreviewToken,
 } from "@/lib/render-access/preview-token";
 
-const SCOPE = { pieceId: "post-instagram", propertyId: "prop-1" } as const;
-const OTHER_PROPERTY = { pieceId: "post-instagram", propertyId: "prop-2" } as const;
-const OTHER_PIECE = { pieceId: "ficha-pdf", propertyId: "prop-1" } as const;
+const SCOPE = {
+  pieceId: "post-instagram",
+  propertyId: "prop-1",
+  revision: 7,
+} as const;
+const OTHER_PROPERTY = { ...SCOPE, propertyId: "prop-2" } as const;
+const OTHER_PIECE = { ...SCOPE, pieceId: "ficha-pdf" } as const;
+const OTHER_REVISION = { ...SCOPE, revision: 8 } as const;
 
 describe("token de render — el renderer entra, un tercero no", () => {
   it("acepta el token recien acuñado para su pieza y su propiedad", () => {
@@ -38,6 +43,13 @@ describe("token de render — el renderer entra, un tercero no", () => {
   it("no sirve para OTRA pieza de la misma propiedad", () => {
     const token = mintPreviewToken(SCOPE);
     expect(verifyPreviewToken(token, OTHER_PIECE)).toBe(false);
+  });
+
+  it("no sirve para otra REVISION de la misma propiedad (F-06)", () => {
+    // Sin esto, cambiar `rev` en la URL desactivaria el control de version y el
+    // juego de piezas podria volver a salir con datos de dos momentos.
+    const token = mintPreviewToken(SCOPE);
+    expect(verifyPreviewToken(token, OTHER_REVISION)).toBe(false);
   });
 
   it("caduca a los 2 min, por encima del techo de 90 s de una captura", () => {
@@ -144,6 +156,7 @@ describe("isPreviewAccessAllowed — politica de la ruta de render", () => {
     isDemo: false,
     pieceId: SCOPE.pieceId,
     propertyId: SCOPE.propertyId,
+    revision: SCOPE.revision,
     token: tokenValido,
     ...extra,
   });
@@ -170,6 +183,17 @@ describe("isPreviewAccessAllowed — politica de la ruta de render", () => {
     expect(
       isPreviewAccessAllowed(enProduccion({ propertyId: undefined }), AHORA + 1_000),
     ).toBe(false);
+  });
+
+  it("en produccion exige revision, y la comprueba (F-06)", () => {
+    expect(
+      isPreviewAccessAllowed(enProduccion({ revision: undefined }), AHORA + 1_000),
+    ).toBe(false);
+    // Manipular `rev` en la URL rompe la firma: no hay forma de pedir la pieza
+    // "como si" fuera de otra version.
+    expect(isPreviewAccessAllowed(enProduccion({ revision: 8 }), AHORA + 1_000)).toBe(
+      false,
+    );
   });
 
   it("en desarrollo queda abierta a proposito (superficie de diseño)", () => {

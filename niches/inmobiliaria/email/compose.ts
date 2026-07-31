@@ -14,8 +14,9 @@ import { renderPropertyEmail } from "./render-email";
 export async function composePropertyEmail(
   entityId: string,
   baseUrl: string,
+  expectedRevision?: number,
 ): Promise<EmailContent | null> {
-  const data = await loadEmailPieceData(entityId, baseUrl);
+  const data = await loadEmailPieceData(entityId, baseUrl, expectedRevision);
   if (!data) return null;
 
   const { html, text } = renderPropertyEmail(

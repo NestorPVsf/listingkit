@@ -107,6 +107,7 @@ function loadDemoData(presetId: string): PieceData {
 async function loadRealData(
   propertyId: string,
   brandId: string | undefined,
+  expectedRevision: number | undefined,
 ): Promise<PieceData> {
   const property = await prisma.property.findUnique({
     where: { id: propertyId },
@@ -114,6 +115,14 @@ async function loadRealData(
   });
 
   if (!property) notFound();
+
+  // F-06: si la propiedad cambio despues de arrancar el trabajo, esta pieza
+  // saldria con datos distintos de las que ya se capturaron. La comparacion va
+  // AQUI, en la misma peticion que lee la fila y la pinta, para que no quede
+  // ventana entre comprobar y renderizar.
+  if (expectedRevision !== undefined && property.revision !== expectedRevision) {
+    notFound();
+  }
 
   const view: PublicPropertyView = storedPropertyToPublicView(property);
 
@@ -157,6 +166,12 @@ export default async function PreviewPage({ params, searchParams }: PreviewPageP
   // que en produccion se ignora y manda la marca de la propiedad.
   const brandIdParam =
     !isProduction && typeof query.brandId === "string" ? query.brandId : undefined;
+  // `rev` solo se acepta como entero no negativo en forma canonica: cualquier
+  // otra cosa vale `undefined` y, en produccion, eso ya es un rechazo.
+  const revisionParam =
+    typeof query.rev === "string" && /^(0|[1-9]\d*)$/.test(query.rev)
+      ? Number(query.rev)
+      : undefined;
 
   if (!isDemo && !propertyIdParam) notFound();
 
@@ -168,12 +183,13 @@ export default async function PreviewPage({ params, searchParams }: PreviewPageP
     pieceId,
     propertyId: propertyIdParam,
     token: typeof query.rt === "string" ? query.rt : undefined,
+    revision: revisionParam,
   });
   if (!allowed) notFound();
 
   const { view, brand, photos } = isDemo
     ? loadDemoData(presetParam)
-    : await loadRealData(propertyIdParam as string, brandIdParam);
+    : await loadRealData(propertyIdParam as string, brandIdParam, revisionParam);
 
   const baseTexts = isDemo
     ? buildFallbackTexts(view)

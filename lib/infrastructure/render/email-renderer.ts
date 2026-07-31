@@ -31,6 +31,11 @@ export interface EmailContent {
 export type EmailComposer = (
   entityId: string,
   baseUrl: string,
+  /**
+   * Revision con la que nacio el trabajo (F-06). El compositor la contrasta con
+   * la fila viva y rechaza componer si la entidad cambio entre medias.
+   */
+  expectedRevision: number,
 ) => Promise<EmailContent | null>;
 
 export interface EmailRendererOptions {
@@ -105,7 +110,11 @@ export function createEmailRenderer(options: EmailRendererOptions): RendererPort
     async open(): Promise<RenderSession> {
       return {
         async render(job: Readonly<RenderJob>, task: Readonly<RenderTask>) {
-          const output = await options.composeEmail(job.entityId, options.baseUrl);
+          const output = await options.composeEmail(
+            job.entityId,
+            options.baseUrl,
+            job.entityRevision,
+          );
           if (!output) {
             throw new EngineError({
               code: "ENTITY_NOT_FOUND",

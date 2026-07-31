@@ -259,9 +259,18 @@ Multi-inquilino sigue siendo otro producto.
 
 ### 6.2 Deuda conocida, no bloqueante
 
-- **Snapshot ignorado** (F-06): cada renderer relee la fila viva en vez del snapshot del job,
-  así que editar una propiedad *a mitad* de generación puede mezclar versiones entre piezas.
-  `entityRevision` está fijo en `1`.
+- **Versiones mezcladas** (F-06): **resuelto**. `Property.revision` sube con todo lo que
+  cambia lo que se imprime —reordenar fotos, cambiar la principal, guardar un titular
+  editado— y cada trabajo nace atado a la revisión que vio. Las tres rutas que releen la
+  fila viva (`/preview`, el compositor de correo, el guion de vídeo) la contrastan **en la
+  misma petición que leen y pintan**, así que no queda ventana entre comprobar y renderizar.
+  Si la propiedad cambió, la pieza se niega y el trabajo para con un diagnóstico concreto en
+  vez de entregar un juego con datos de dos momentos distintos. `entityRevision` ya no está
+  fijo en `1`: el manifiesto del ZIP dice la verdad.
+  Lo que **no** hace: conservar la versión antigua. Editar a mitad no reaprovecha lo
+  renderizado — hay que volver a generar, y el juego sale entero con los datos actuales.
+  Guardar un snapshot completo por trabajo evitaría rehacerlo, y es el siguiente paso si
+  alguna vez molesta.
 - **Cuotas** (F-07/F-09): hay límite por fichero, no acumulado. El ZIP se construye entero en
   memoria. Un operador legítimo no lo nota; un abuso deliberado, sí.
 - **Acoplamiento en `lib/infrastructure/`**: **resuelto**. `email-renderer` recibe un
@@ -271,8 +280,9 @@ Multi-inquilino sigue siendo otro producto.
   `lib/` que importa un vertical es la raíz de composición, que es justo lo que la ADR
   permite, y hay un test que lo vigila fichero a fichero.
 - **Replay del token de render**: dentro de su ventana de 2 minutos, una URL
-  filtrada se puede repetir. No hay nonce ni consumo único — con la app sin
-  autenticación, ese no es el eslabón débil, pero queda dicho.
+  filtrada se puede repetir. No hay nonce ni consumo único. Con el candado de
+  operador puesto, para llegar a esa URL hay que estar dentro o haberla visto en
+  un log; queda dicho igualmente.
 - **Validación del texto editado**: detecta el copia-pega de la dirección, no una reescritura
   a mano ("c/ Secreta doce"). Es una red, no una garantía matemática.
 

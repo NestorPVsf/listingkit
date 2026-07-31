@@ -208,7 +208,8 @@ function createApplication(): Application {
     resolvePlan: resolveInmobiliariaPreviewPlan,
   });
   const videoRenderer = createVideoRenderer({
-    resolveStoryboard: (job) => loadVideoPieceData(job.entityId),
+    resolveStoryboard: (job) =>
+      loadVideoPieceData(job.entityId, job.entityRevision),
     ttsProvider: createV1TTSProvider({ mode: videoTtsMode() }),
   });
   const engine = createEngine({
