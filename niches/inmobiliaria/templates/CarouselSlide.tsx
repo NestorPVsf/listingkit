@@ -37,7 +37,7 @@ function Slide1({ texts, photos }: CarouselSlideProps) {
         style={{
           position: "absolute",
           inset: 0,
-          background: "linear-gradient(to top, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 55%)",
+          background: "linear-gradient(to top, rgba(0,0,0,0.84) 0%, rgba(0,0,0,0.68) 20%, rgba(0,0,0,0.3) 48%, rgba(0,0,0,0) 72%, rgba(0,0,0,0.4) 100%)",
         }}
       />
       <SlideNumber slide={1} />

@@ -29,6 +29,14 @@ import { brandConfigSchema, brandPresetSchema } from "../niches/inmobiliaria/bra
 const UPLOADS_ROOT = path.resolve(process.cwd(), "uploads");
 const ASSETS_DIR = path.join(UPLOADS_ROOT, "assets");
 const BRAND_DIR = path.join(UPLOADS_ROOT, "brand");
+/**
+ * Fotos reales de la demo, versionadas en el repo (~2,8 MB) para que el seed
+ * siga siendo reproducible en un clon. Origen: Pexels — licencia libre, uso
+ * comercial permitido y sin atribucion obligatoria. NO usar fotos de anuncios
+ * de agencias reales: son de su fotografo, y montar la demo con material de la
+ * competencia del cliente sale mal por los dos lados.
+ */
+const SEED_PHOTOS_DIR = path.resolve(process.cwd(), "prisma", "seed-photos");
 
 // ---------------------------------------------------------------------------
 // UUID deterministico (namespace por seed string) — idempotencia real: el
@@ -65,16 +73,21 @@ async function generatePlaceholderPng(
  * Escribe binario + metadata JSON en uploads/assets/, mismo contrato que
  * StoredImageAsset de local-asset-store.ts, y devuelve el assetId (uuid).
  */
-async function seedImageAsset(seedKey: string, buffer: Buffer): Promise<string> {
+async function seedImageAsset(
+  seedKey: string,
+  buffer: Buffer,
+  formato: "png" | "jpeg" = "png",
+): Promise<string> {
   const id = deterministicUuid(seedKey);
-  const storageFileName = `${id}.png`;
+  const extension = formato === "jpeg" ? "jpg" : "png";
+  const storageFileName = `${id}.${extension}`;
   const storageKey = path.join("uploads", "assets", storageFileName).replaceAll("\\", "/");
   const metadata = await sharp(buffer).metadata();
   const record = {
     id,
     kind: "image" as const,
-    mediaType: "image/png" as const,
-    fileName: `${seedKey.split("/").pop()}.png`,
+    mediaType: `image/${formato}` as "image/png" | "image/jpeg",
+    fileName: `${seedKey.split("/").pop()}.${extension}`,
     storageKey,
     width: metadata.width ?? 0,
     height: metadata.height ?? 0,
@@ -320,9 +333,18 @@ async function main(): Promise<void> {
     for (const { slug, input: base } of PROPERTIES) {
       const photoAssetIds: string[] = [];
       for (let index = 0; index < 5; index += 1) {
-        const [from, to] = PHOTO_GRADIENTS[index]!;
-        const buffer = await generatePlaceholderPng(800, 1000, from, to);
-        const assetId = await seedImageAsset(`postiguet-homes/${slug}/foto-${index + 1}`, buffer);
+        // Fotos reales (Pexels, licencia libre para uso comercial). Antes eran
+        // degradados de color: con un producto cuyo valor entero es visual, una
+        // demo de rectangulos grises no demuestra nada — ni al cliente ni a
+        // nosotros, porque tapa como quedan de verdad las piezas.
+        const buffer = await readFile(
+          path.join(SEED_PHOTOS_DIR, slug, `${index + 1}.jpg`),
+        );
+        const assetId = await seedImageAsset(
+          `postiguet-homes/${slug}/foto-${index + 1}`,
+          buffer,
+          "jpeg",
+        );
         photoAssetIds.push(assetId);
       }
 
@@ -384,11 +406,11 @@ async function main(): Promise<void> {
       for (const [index, assetId] of photoAssetIds.entries()) {
         await prisma.propertyPhoto.upsert({
           where: { propertyId_order: { propertyId: property.id, order: index } },
-          update: { id: assetId, path: `${assetId}.png`, esMain: assetId === input.primaryPhotoAssetId },
+          update: { id: assetId, path: `${assetId}.jpg`, esMain: assetId === input.primaryPhotoAssetId },
           create: {
             id: assetId,
             propertyId: property.id,
-            path: `${assetId}.png`,
+            path: `${assetId}.jpg`,
             order: index,
             esMain: assetId === input.primaryPhotoAssetId,
           },

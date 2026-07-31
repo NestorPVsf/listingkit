@@ -36,7 +36,7 @@ export function StoryInstagram({ view, brand, texts, photos }: BasePieceProps) {
           position: "absolute",
           inset: 0,
           background:
-            "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.05) 46%, rgba(0,0,0,0.35) 100%)",
+            "linear-gradient(to top, rgba(0,0,0,0.86) 0%, rgba(0,0,0,0.72) 18%, rgba(0,0,0,0.3) 44%, rgba(0,0,0,0.12) 70%, rgba(0,0,0,0.45) 100%)",
         }}
       />
 
@@ -101,7 +101,7 @@ export function StoryInstagram({ view, brand, texts, photos }: BasePieceProps) {
                 fontSize: 26,
                 fontWeight: 600,
                 color: "#ffffff",
-                background: "rgba(255,255,255,0.16)",
+                background: "rgba(0,0,0,0.42)",
                 borderRadius: "var(--piece-radius-md)",
                 padding: "8px 18px",
               }}

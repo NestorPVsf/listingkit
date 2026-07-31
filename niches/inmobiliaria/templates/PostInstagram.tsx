@@ -30,13 +30,19 @@ export function PostInstagram({ view, brand, texts, photos }: BasePieceProps) {
         />
       ) : null}
 
-      {/* Scrim inferior neutro para legibilidad — no es color de marca */}
+      {/* Scrim inferior neutro para legibilidad — no es color de marca.
+          Reforzado tras cambiar las fotos demo (degradados grises) por fotos
+          reales: con un gris medio, 0,55 de negro bastaba; sobre una foto
+          luminosa —una ventana, un cielo, una piscina— el titular blanco
+          desaparecia. La demo se veia perfecta y la pieza real era ilegible.
+          El degradado ahora sube mas arriba y llega mas opaco abajo, que es
+          donde se apoya TODO el texto. */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           background:
-            "linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.15) 42%, rgba(0,0,0,0) 62%)",
+            "linear-gradient(to top, rgba(0,0,0,0.84) 0%, rgba(0,0,0,0.7) 20%, rgba(0,0,0,0.38) 44%, rgba(0,0,0,0) 70%, rgba(0,0,0,0.4) 100%)",
         }}
       />
 
@@ -106,7 +112,7 @@ export function PostInstagram({ view, brand, texts, photos }: BasePieceProps) {
                 fontSize: 26,
                 fontWeight: 600,
                 color: "#ffffff",
-                background: "rgba(255,255,255,0.16)",
+                background: "rgba(0,0,0,0.42)",
                 borderRadius: "var(--piece-radius-md)",
                 padding: "8px 18px",
               }}
