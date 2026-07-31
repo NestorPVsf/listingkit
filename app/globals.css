@@ -1,20 +1,36 @@
 @import "tailwindcss";
 
 /*
- * Tokens de la UI de la app — preset editorial-crema, fuente unica de verdad
- * en niches/inmobiliaria/brand-presets.json (ver .claude/design/DESIGN.md:
- * "la UI de la app usa SIEMPRE editorial-crema"). No duplicar valores fuera
- * de aqui salvo el propio JSON.
+ * Tokens del CHASIS de la app. Deliberadamente NEUTROS, y ya no la paleta de un
+ * preset de marca (eran los de `editorial-crema`, fondo crema #faf7f0).
+ *
+ * Dos razones, y la segunda es la que manda:
+ *
+ * 1. El crema arrastraba la interfaz entera hacia lo editorial —"tipo revista"—
+ *    cuando esto es una herramienta de trabajo. Y encima apagaba el naranja: un
+ *    acento calido sobre un fondo calido no acenta nada.
+ * 2. **La app no debe vestir la paleta de ninguna marca.** Las piezas ya visten
+ *    la de cada agencia (sus tokens son `--piece-*`, ver PieceCanvas). Si el
+ *    chasis lleva los colores de un preset concreto, el dia que un cliente sea
+ *    turquesa o azul marino su panel no pega con nada suyo. Neutro es lo unico
+ *    que sirve para todos.
+ *
+ * El color lo ponen las fotos de las propiedades, que es de donde debe venir en
+ * un producto sobre inmuebles. El acento queda para UNA cosa: la accion
+ * principal.
+ *
+ * `editorial-crema` sigue intacto como preset de MARCA en brand-presets.json;
+ * lo que se desacopla es el chasis. Ver .claude/design/DESIGN.md.
  */
 :root {
-  --background: #faf7f0;
+  --background: #f6f6f7;
   --surface: #ffffff;
-  --foreground: #1a1815;
-  --foreground-muted: #6b6558;
+  --foreground: #14151a;
+  --foreground-muted: #6b7079;
   --primary: #c1440e;
   --secondary: #2f5d3a;
   --on-primary: #ffffff;
-  --border: #e5dfd0;
+  --border: #e3e4e8;
 }
 
 @theme inline {

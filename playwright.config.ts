@@ -6,6 +6,19 @@ import {
   PROD_PORT,
   PROD_PREVIEW_SECRET,
 } from "./tests/e2e/prod-server";
+import {
+  E2E_DEV_BASE_URL,
+  E2E_DEV_DATABASE_URL,
+  E2E_DEV_PORT,
+  E2E_PROD_DATABASE_URL,
+} from "./tests/e2e/test-db";
+
+/**
+ * El proceso de test tambien habla con Prisma (`brand-logo.spec.ts` crea el
+ * Brand directamente), asi que apuntarlo a la base de pruebas ANTES de que se
+ * cargue `lib/prisma.ts` es parte de la separacion, no un detalle.
+ */
+process.env.DATABASE_URL = E2E_DEV_DATABASE_URL;
 
 /**
  * Config E2E. Dos proyectos, porque hay dos cosas distintas que comprobar:
@@ -33,7 +46,7 @@ export default defineConfig({
   reporter: [["html", { open: "never", outputFolder: "tests/__screenshots__/report" }]],
   outputDir: "tests/__screenshots__/artifacts",
   use: {
-    baseURL: "http://localhost:3000",
+    baseURL: E2E_DEV_BASE_URL,
     trace: "on-first-retry",
   },
   projects: [
@@ -50,16 +63,26 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: "npm run dev",
-      url: "http://localhost:3000",
-      reuseExistingServer: !process.env.CI,
+      // Puerto y base propios: `reuseExistingServer` habria enganchado el
+      // servidor de desarrollo que el usuario tiene abierto —con SU base—, que
+      // es justo lo que esto viene a evitar.
+      command: `npx prisma migrate deploy && npx next dev -p ${E2E_DEV_PORT}`,
+      url: E2E_DEV_BASE_URL,
+      reuseExistingServer: false,
       timeout: 120_000,
+      env: {
+        DATABASE_URL: E2E_DEV_DATABASE_URL,
+        // Sin esto el renderer navegaria a su puerto por defecto (3000) para
+        // capturar las piezas: o no hay nada escuchando, o —peor— esta el
+        // servidor del usuario y las capturas saldrian de SU base de datos.
+        RENDER_BASE_URL: E2E_DEV_BASE_URL,
+      },
     },
     {
       // Build fresco siempre: reutilizar un servidor de produccion que quedo
       // vivo de otra tanda daria un falso verde con codigo antiguo o con otro
       // secreto.
-      command: `npm run build && npx next start -p ${PROD_PORT}`,
+      command: `npx prisma migrate deploy && npm run build && npx next start -p ${PROD_PORT}`,
       url: PROD_BASE_URL,
       reuseExistingServer: false,
       timeout: 240_000,
@@ -70,6 +93,7 @@ export default defineConfig({
         // El candado de operador se prueba encendido: en produccion es
         // obligatorio, y sin el la app responde 503 a todo.
         APP_PASSWORD_HASH: hashPassword(PROD_OPERATOR_PASSWORD),
+        DATABASE_URL: E2E_PROD_DATABASE_URL,
       },
     },
   ],

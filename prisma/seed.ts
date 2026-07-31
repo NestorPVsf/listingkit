@@ -102,10 +102,29 @@ async function seedImageAsset(
   return id;
 }
 
+/**
+ * Logotipo de la agencia demo. Era un rectangulo de degradado, y con las fotos
+ * reales puestas se convirtio en lo unico que cantaba en las piezas.
+ *
+ * Va sobre un badge oscuro NEUTRO, no en blanco sobre transparente, porque el
+ * mismo fichero se pinta encima de una foto a pleno sol (post, story, carrusel)
+ * y sobre el papel blanco de la ficha PDF. Un logo blanco resolveria lo primero
+ * y desapareceria en lo segundo. Neutro tampoco pelea con la paleta de ningun
+ * preset. Relacion 4:1 = LOGO_BOX_ASPECT_RATIO de templates/shared.tsx.
+ */
 async function seedBrandLogo(): Promise<string> {
   await mkdir(BRAND_DIR, { recursive: true });
   const fileName = "postiguet-homes-demo-logo.png";
-  const buffer = await generatePlaceholderPng(400, 160, "#B84826", "#357064");
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="480" height="120" viewBox="0 0 480 120">
+    <rect width="480" height="120" rx="14" fill="#14151a"/>
+    <text x="240" y="56" text-anchor="middle" fill="#ffffff"
+          font-family="Georgia, 'Times New Roman', serif" font-size="40" font-weight="700"
+          letter-spacing="1">POSTIGUET</text>
+    <text x="240" y="88" text-anchor="middle" fill="#c9cbd1"
+          font-family="Helvetica, Arial, sans-serif" font-size="20" font-weight="500"
+          letter-spacing="9">HOMES</text>
+  </svg>`;
+  const buffer = await sharp(Buffer.from(svg)).png().toBuffer();
   await writeFile(path.join(BRAND_DIR, fileName), buffer);
   return `/uploads/brand/${fileName}`;
 }
