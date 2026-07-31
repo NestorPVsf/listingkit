@@ -182,6 +182,28 @@ export async function createBrandAction(
  * esperan el objeto plano. Los campos Json de Prisma NO necesitan stringify.
  */
 export async function persistBrand(data: BrandConfig): Promise<Brand> {
+  // Una instalacion = una agencia = UNA marca (ADR: v1 es monoinquilino). Esto
+  // creaba una marca nueva cada vez, y como el dashboard mostraba "la ultima
+  // creada", repetir el onboarding cambiaba la marca activa de toda la app sin
+  // decir nada — con 35 marcas en la base, ninguna de ellas la buena.
+  const existente = await prisma.brand.findFirst({ orderBy: { createdAt: "asc" } });
+  if (existente) {
+    return prisma.brand.update({
+      where: { id: existente.id },
+      data: {
+        nombre: data.nombre,
+        logo: data.logo,
+        colores: data.colores,
+        tipografia: data.tipografia,
+        web: data.web,
+        telefono: data.telefono,
+        email: data.email,
+        instagram: data.instagram,
+        ctaHabitual: data.ctaHabitual,
+      },
+    });
+  }
+
   return prisma.brand.create({
     data: {
       nombre: data.nombre,

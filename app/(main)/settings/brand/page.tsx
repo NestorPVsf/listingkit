@@ -15,7 +15,7 @@ export default async function BrandSettingsPage() {
     <main className="mx-auto w-full max-w-2xl px-6 py-16">
       <header className="mb-10">
         <p className="mb-2 text-sm font-medium uppercase tracking-widest text-foreground-muted">
-          Configuracion
+          Configuración
         </p>
         <h1 className="font-display text-4xl font-semibold text-foreground">Marca</h1>
         <p className="mt-2 text-foreground-muted">

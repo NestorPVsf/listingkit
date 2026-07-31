@@ -22,7 +22,7 @@ export default function HelpPage() {
           <p className="text-foreground-muted">
             Introduces una sola vez los datos y las fotos de una propiedad y el
             sistema genera seis piezas listas para revisar y publicar: ficha
-            tecnica PDF, post y carrusel de Instagram, story, email comercial y
+            técnica PDF, post y carrusel de Instagram, story, email comercial y
             video vertical. No publica en redes ni portales: te entrega el
             contenido para que lo revises.
           </p>
@@ -34,7 +34,7 @@ export default function HelpPage() {
           </h2>
           <ol className="list-decimal space-y-2 pl-6 text-foreground-muted">
             <li>Configura tu marca (onboarding) la primera vez.</li>
-            <li>Crea una propiedad desde el boton &quot;Nueva propiedad&quot; y sube al menos 3 fotos.</li>
+            <li>Crea una propiedad desde el botón &quot;Nueva propiedad&quot; y sube al menos 3 fotos.</li>
             <li>Espera a que se generen las piezas (veras el estado de cada una).</li>
             <li>Revisa la vista previa, edita textos si hace falta y regenera solo la pieza afectada.</li>
             <li>Descarga las piezas individualmente o todas en un ZIP.</li>
@@ -59,7 +59,7 @@ export default function HelpPage() {
           </h2>
           <p className="text-foreground-muted">
             Cada pieza muestra su estado. Si alguna falla, veras la causa y la
-            solucion sugerida junto a un boton para reintentar solo esa pieza;
+            solución sugerida junto a un botón para reintentar solo esa pieza;
             el resto no se pierde. Por ejemplo, si falta FFmpeg en el sistema,
             el video fallara con instrucciones de instalacion pero las demas
             piezas se generaran igual.

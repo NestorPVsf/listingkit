@@ -18,12 +18,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 // Claves de UI (contrato data-testid del spec E2E) ↔ claves del catalogo.
 const PIECES = [
-  { uiKey: "pdf-ficha", catalogKey: "property-sheet", label: "Ficha tecnica PDF" },
+  { uiKey: "pdf-ficha", catalogKey: "property-sheet", label: "Ficha técnica PDF" },
   { uiKey: "instagram-post", catalogKey: "instagram-post", label: "Post de Instagram" },
   { uiKey: "instagram-carousel", catalogKey: "instagram-carousel", label: "Carrusel de Instagram" },
   { uiKey: "instagram-story", catalogKey: "instagram-story", label: "Story de Instagram" },
   { uiKey: "email", catalogKey: "property-email", label: "Email comercial" },
-  { uiKey: "video", catalogKey: "vertical-video", label: "Video vertical" },
+  { uiKey: "video", catalogKey: "vertical-video", label: "Vídeo vertical" },
 ] as const;
 
 type UiKey = (typeof PIECES)[number]["uiKey"];
@@ -391,38 +391,68 @@ export function PropertyDetail({
 
   return (
     <div>
-      {/* ------------------------- Generacion ------------------------- */}
-      <section data-testid="generation-screen" aria-label="Estado de la generacion" className="mb-14">
-        <h2 className="mb-4 font-display text-2xl font-semibold text-foreground">
-          Generacion de piezas
-        </h2>
+      {/* ------------------- Las piezas: estado y resultado -------------------
+          Estaban en DOS secciones: una tabla de estados que decia "Lista" seis
+          veces y, mas abajo y fuera de pantalla, las miniaturas de verdad. En
+          un producto visual, la primera pantalla no puede ser una tabla de
+          texto sobre imagenes que existen. Se fusionan: una tarjeta por pieza,
+          con su estado dentro. */}
+      <section
+        data-testid="generation-screen"
+        aria-label="Piezas de la propiedad"
+        className="mb-14"
+      >
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-display text-2xl font-semibold text-foreground">
+            Las 6 piezas
+          </h2>
+          {allSettled ? (
+            <a
+              data-testid="download-zip"
+              href={jobId ? `/api/render-jobs/${jobId}/package` : "#"}
+              download
+              className="rounded-full bg-secondary px-5 py-2.5 text-sm font-semibold text-on-primary"
+            >
+              Descargar todo (ZIP)
+            </a>
+          ) : null}
+        </div>
         {generateError ? (
-          <p role="alert" className="mb-4 border border-primary bg-surface p-3 text-sm font-medium text-primary">
+          <p role="alert" className="mb-4 rounded-lg border border-primary bg-surface p-3 text-sm font-medium text-primary">
             {generateError}
           </p>
         ) : null}
-        <ul className="divide-y divide-border border-y border-border">
+
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {pieces.map((piece) => (
-            <li key={piece.uiKey} className="py-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <p className="font-medium text-foreground">{piece.label}</p>
+            <article
+              key={piece.uiKey}
+              data-testid={`piece-card-${piece.uiKey}`}
+              className="rounded-lg border border-border bg-surface p-4"
+            >
+              <div className="mb-3 flex items-baseline justify-between gap-2">
+                <h3 className="font-display text-lg font-semibold text-foreground">
+                  {piece.label}
+                </h3>
                 <p
                   data-testid={`job-status-${piece.uiKey}`}
                   data-status={piece.status === "waiting" ? "pending" : piece.status}
                   role="status"
-                  className="text-sm font-medium text-foreground-muted"
+                  className="shrink-0 text-xs font-medium text-foreground-muted"
                 >
                   {STATUS_TEXT[piece.status]}
                 </p>
               </div>
+              <PiecePreview artifacts={piece.artifacts} label={piece.label} />
+
               {piece.error ? (
-                <div className="mt-3 border border-border bg-surface p-3 text-sm">
+                <div className="mt-3 rounded border border-border bg-background p-3 text-sm">
                   <p data-testid={`job-error-cause-${piece.uiKey}`} className="text-foreground">
                     <span className="font-semibold">Causa: </span>
                     {piece.error.cause}
                   </p>
                   <p data-testid={`job-error-solution-${piece.uiKey}`} className="mt-1 text-foreground-muted">
-                    <span className="font-semibold text-foreground">Solucion: </span>
+                    <span className="font-semibold text-foreground">Solución: </span>
                     {piece.error.solution}
                   </p>
                   {piece.error.retryable ? (
@@ -431,48 +461,13 @@ export function PropertyDetail({
                       data-testid={`retry-${piece.uiKey}`}
                       onClick={() => void handleRetry(piece.uiKey)}
                       disabled={regenerating === piece.uiKey}
-                      className="mt-3 bg-primary px-4 py-2 text-xs font-semibold text-on-primary disabled:opacity-60"
+                      className="mt-3 rounded-full bg-primary px-4 py-2 text-xs font-semibold text-on-primary disabled:opacity-60"
                     >
-                      {regenerating === piece.uiKey ? "Reintentando..." : "Reintentar esta pieza"}
+                      {regenerating === piece.uiKey ? "Reintentando…" : "Reintentar esta pieza"}
                     </button>
                   ) : null}
                 </div>
               ) : null}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {/* ------------------------- Vista previa ------------------------- */}
-      {allSettled ? (
-        <section aria-label="Vista previa de las piezas" className="mb-14">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <h2 className="font-display text-2xl font-semibold text-foreground">
-              Vista previa
-            </h2>
-            {/* El endpoint /package es de la Fase 6 (aun no existe): el boton
-                hace la llamada y el 404 resultante es esperado. */}
-            <a
-              data-testid="download-zip"
-              href={jobId ? `/api/render-jobs/${jobId}/package` : "#"}
-              download
-              className="bg-secondary px-5 py-2 text-sm font-semibold text-on-primary"
-            >
-              Descargar todo (ZIP)
-            </a>
-          </div>
-
-          <div className="grid gap-6 sm:grid-cols-2">
-            {pieces.map((piece) => (
-              <article
-                key={piece.uiKey}
-                data-testid={`piece-card-${piece.uiKey}`}
-                className="border border-border bg-surface p-4"
-              >
-                <h3 className="mb-3 font-display text-lg font-semibold text-foreground">
-                  {piece.label}
-                </h3>
-                <PiecePreview artifacts={piece.artifacts} label={piece.label} />
 
                 {editingPiece === piece.uiKey ? (
                   <div className="mt-3">
@@ -531,7 +526,7 @@ export function PropertyDetail({
                     disabled={regenerating === piece.uiKey}
                     className="border border-border px-3 py-2 text-xs font-medium text-foreground disabled:opacity-60"
                   >
-                    {regenerating === piece.uiKey ? "Regenerando..." : "Regenerar esta pieza"}
+                    {regenerating === piece.uiKey ? "Regenerando…" : "Regenerar esta pieza"}
                   </button>
                   {piece.artifacts[0] ? (
                     <a
@@ -543,12 +538,11 @@ export function PropertyDetail({
                       Descargar
                     </a>
                   ) : null}
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
+              </div>
+            </article>
+          ))}
+        </div>
+      </section>
 
       {/* ------------------------- Reorden de fotos ------------------------- */}
       <section aria-label="Orden de las fotos">
@@ -651,7 +645,7 @@ function PiecePreview({
   // Email HTML / texto plano: enlace de descarga como preview minima.
   return (
     <p className="text-sm text-foreground-muted">
-      Pieza generada ({first.fileName}). Usa el boton Descargar para verla.
+      Pieza generada ({first.fileName}). Usa el botón Descargar para verla.
     </p>
   );
 }

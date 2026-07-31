@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "../globals.css";
+import { AppNav } from "./AppNav";
 
 // Tipografia de la UI de la app — preset editorial-crema (ver globals.css y
 // .claude/design/DESIGN.md). No introducir fuentes nuevas fuera del catalogo
@@ -29,7 +30,10 @@ export default function MainLayout({
 }>) {
   return (
     <html lang="es" className={`${fraunces.variable} ${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col font-sans">
+        <AppNav />
+        {children}
+      </body>
     </html>
   );
 }
