@@ -11,6 +11,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createEngine } from "@/lib/engine/create-engine";
+import { createInMemoryRenderLock } from "@/lib/engine/ports/render-lock";
 import type {
   RenderArtifact,
   RenderJob,
@@ -116,6 +117,7 @@ function engineFor(
     jobs: repository,
     renderer,
     packages: { build: async () => ({}) } as never,
+    locks: createInMemoryRenderLock(),
     clock: { now: () => NOW },
     createBindingContext: async () => ({}) as never,
   });
@@ -197,6 +199,7 @@ function createEngineThatFailsToOpen(repository: RenderJobRepository) {
       },
     },
     packages: { build: async () => ({}) } as never,
+    locks: createInMemoryRenderLock(),
     clock: { now: () => NOW },
     createBindingContext: async () => ({}) as never,
   });

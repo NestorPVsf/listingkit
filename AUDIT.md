@@ -34,12 +34,12 @@ del cliente, no del sistema.
 
 | Comprobación | Resultado |
 |---|---|
-| `npx vitest run` | **294 pasan / 294** (22 ficheros) |
-| `npx playwright test` | **24 pasan / 24** — 9 contra `next dev` (flujo por UI + render real de las 6 piezas) y **15 contra un build de producción** (`next build && next start`) |
+| `npx vitest run` | **302 pasan / 302** (23 ficheros) |
+| `npx playwright test` | **26 pasan / 26** — 9 contra `next dev` (flujo por UI + render real de las 6 piezas) y **17 contra un build de producción** (`next build && next start`) |
 | `npx tsc --noEmit` | **0 errores** |
 | `npm run build` | **exit 0**, 21 rutas |
 
-De esos 294 unitarios, **11 ficheros son de seguridad** (`tests/security/`) y existen porque
+De esos 302 unitarios, **12 ficheros son de seguridad** (`tests/security/`) y existen porque
 cada uno corresponde a un agujero real que se encontró y se cerró, no a una casilla de
 cobertura:
 
@@ -50,6 +50,7 @@ cobertura:
 - `zip-package` · `zip-package-scope` — el ZIP lleva lo que debe, y todo lo que debe
 - `preview-render-token` — la ruta de render no se abre sin un token firmado y caduco
 - `operator-session` — la llave de la instalación no se fabrica ni se estira
+- `render-lease` — dos procesos no generan piezas de la misma propiedad a la vez
 - `path-traversal` · `file-size-limits` — lo básico de subida de ficheros
 
 El E2E de la ficha PDF **extrae el texto del PDF generado** y comprueba que la dirección
@@ -124,6 +125,31 @@ Cinco hallazgos medios y bajos, todos aplicados:
 Ese último es el que más valía. También destapó que dos casos de mi propia
 batería usaban una caducidad del año 2001, así que se rechazaban por caducados
 y **nunca llegaban a ejercitar el parser de firma** que decían probar.
+
+### Artefactos inmutables y lease de render (F-05)
+
+Cada job escribe ahora en su **propio directorio** (`output/<entityId>/<jobId>/`),
+no en rutas fijas compartidas. Tres cosas cambian:
+
+- Dos procesos ya no se pisan el mismo fichero.
+- Desaparece el `rm(destino)` previo al `rename`, y con él la ventana en la que
+  una descarga simultánea encontraba el fichero ausente.
+- **Regenerar una pieza deja de cambiar lo que descarga un enlace antiguo.** Es
+  lo que le importa al cliente: un artefacto enviado por correo la semana pasada
+  sigue entregando lo mismo.
+
+Como la convención de nombre ya no sirve para encontrar nada, el empaquetador
+pregunta a un registro de artefactos (`ArtifactRegistry`, sobre la tabla
+`GeneratedPiece`) cuál es el último fichero de cada pieza. Eso mantiene la
+propiedad que costó un bug crítico: **el ZIP describe la propiedad, no el job**.
+
+Y para lo que las rutas por sí solas no arreglan —dos procesos generando la
+misma propiedad a la vez— hay un lease en base de datos que se toma con un
+compare-and-swap y **caduca solo**, para que un proceso muerto no deje la
+entidad bloqueada hasta que alguien entre a mano en la base de datos.
+
+Los dos tests que lo prueban se validaron contra el propio fallo: devolviendo el
+renderer a la ruta compartida, el de inmutabilidad se pone rojo.
 
 ### Candado de operador
 
@@ -209,20 +235,27 @@ un nicho que necesite otro formato **tiene que tocar el motor**.
 
 Esta sección existe porque un audit que solo lista logros no sirve para decidir.
 
-### 6.1 Bloqueantes para producción
+### 6.1 Requisitos de despliegue (ya no hay bloqueantes)
 
-| Riesgo | Realidad hoy | Qué haría falta |
-|---|---|---|
-| **Un solo proceso** (F-05) | La cola vive en memoria y los artefactos se escriben en rutas fijas (`output/<propiedad>/<fichero>`). Dos instancias se pisarían los ficheros. El secreto del token de render también es por proceso: con varias instancias hay que fijar `RENDER_PREVIEW_SECRET` | Rutas inmutables por job + lock en base de datos |
+Los dos bloqueantes que quedaban están cerrados: hay candado de operador, y F-05
+(un solo proceso) también. Lo que queda no son defectos sino **condiciones de
+instalación**, y conviene tenerlas delante antes de montar esto en ningún sitio:
 
-**Conclusión honesta:** `next start` genera las 6 piezas y la aplicación ya no está abierta:
-hay candado de operador. Lo que queda para exponerlo en serio es **un solo proceso** — la cola
-vive en memoria y los artefactos se escriben en rutas fijas, así que dos instancias se pisarían.
-Con una sola instancia detrás de HTTPS, hoy es instalable en una inmobiliaria.
+| Requisito | Por qué |
+|---|---|
+| **Servir detrás de HTTPS** | La cookie de sesión va marcada `Secure`: sin TLS, el navegador no la guarda y no se puede entrar |
+| **`APP_PASSWORD_HASH` configurado** | Sin él la app responde 503 a todo. Es deliberado |
+| **Con varias instancias: `RENDER_PREVIEW_SECRET` compartido** | Cada proceso genera el suyo si falta, y las capturas de uno no validarían contra la ruta servida por otro |
+| **Con varias instancias: `output/` en almacenamiento compartido** | Los artefactos se escriben en disco local. El lease evita que dos procesos generen la misma propiedad a la vez, y las rutas por job evitan que se pisen — pero una instancia no puede servir la descarga de un fichero que escribió otra en su disco. Un `AssetStore` sobre object storage es el siguiente paso natural |
 
-Y lo que el candado **no** es: gestión de usuarios. Una instalación = una agencia = una
-contraseña. No hay usuarios, ni roles, ni trazabilidad de quién hizo qué. Multi-inquilino sigue
-siendo otro producto.
+**Conclusión honesta:** una instalación, detrás de HTTPS, con su contraseña, es
+instalable hoy en una inmobiliaria. Varias instancias requieren además el
+almacenamiento compartido de la última fila — no es un defecto oculto, es el
+límite conocido de guardar ficheros en el disco de la máquina.
+
+Y lo que el candado **no** es: gestión de usuarios. Una instalación = una agencia
+= una contraseña. No hay usuarios, ni roles, ni trazabilidad de quién hizo qué.
+Multi-inquilino sigue siendo otro producto.
 
 ### 6.2 Deuda conocida, no bloqueante
 

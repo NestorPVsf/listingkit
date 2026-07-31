@@ -69,15 +69,20 @@ async function writeArtifact(
   pieceKey: string,
   variant: string,
 ): Promise<RenderArtifact> {
-  const directory = outputPath(entitySegment);
-  const temporaryDirectory = outputPath(entitySegment, `.tmp-${jobSegment}`);
-  const finalPath = outputPath(entitySegment, fileName);
-  const temporaryPath = outputPath(entitySegment, `.tmp-${jobSegment}`, `${randomUUID()}.tmp`);
+  // F-05: directorio propio por job, destino unico, sin `rm` previo.
+  const directory = outputPath(entitySegment, jobSegment);
+  const temporaryDirectory = outputPath(entitySegment, jobSegment, ".tmp");
+  const finalPath = outputPath(entitySegment, jobSegment, fileName);
+  const temporaryPath = outputPath(
+    entitySegment,
+    jobSegment,
+    ".tmp",
+    `${randomUUID()}.tmp`,
+  );
 
   await mkdir(directory, { recursive: true });
   await mkdir(temporaryDirectory, { recursive: true });
   await writeFile(temporaryPath, content, "utf8");
-  await rm(finalPath, { force: true });
   await rename(temporaryPath, finalPath);
 
   const [fileStats, bytes] = await Promise.all([stat(finalPath), readFile(finalPath)]);

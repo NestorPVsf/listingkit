@@ -15,15 +15,28 @@ import JSZip from "jszip";
 import { createJszipPackageBuilder } from "@/lib/infrastructure/package/jszip-package-builder";
 import { inmobiliariaPackagePlan } from "@/niches/inmobiliaria/package/plan";
 
-// El empaquetador ya no es un singleton con el vertical dentro: se le pasa el
-// plan del nicho, resuelto por `job.nicheId`.
-const jszipPackageBuilder = createJszipPackageBuilder({
-  inmobiliaria: inmobiliariaPackagePlan,
-});
+// Registro de artefactos que simula lo REAL desde F-05: las piezas de la
+// propiedad las escribio un job ANTERIOR, en su propio directorio inmutable.
+// Antes este test dejaba los ficheros en `output/<entityId>/` y el empaquetador
+// los encontraba por convencion de nombre; esa convencion ya no existe.
+const jszipPackageBuilder = createJszipPackageBuilder(
+  { inmobiliaria: inmobiliariaPackagePlan },
+  {
+    latestByEntity: async () =>
+      FILES_ON_DISK.map((fileName) => ({
+        pieceKey: "previo",
+        fileName,
+        storageKey: `output/${ENTITY_ID}/${JOB_ANTERIOR}/${fileName}`,
+      })),
+  },
+);
 import type { RenderJob } from "@/lib/engine/contracts";
 
 const ENTITY_ID = "prop-scope-regression-0001";
-const OUTPUT_DIR = path.resolve(process.cwd(), "output", ENTITY_ID);
+/** El job que genero las piezas la primera vez. */
+const JOB_ANTERIOR = "job-scope-anterior";
+const ENTITY_DIR = path.resolve(process.cwd(), "output", ENTITY_ID);
+const OUTPUT_DIR = path.join(ENTITY_DIR, JOB_ANTERIOR);
 
 /** Las 14 entradas de las 5 piezas no-video, tal y como quedan en disco. */
 const FILES_ON_DISK = [
@@ -122,7 +135,7 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  await rm(OUTPUT_DIR, { recursive: true, force: true });
+  await rm(ENTITY_DIR, { recursive: true, force: true });
 });
 
 describe("ZIP — alcance por propiedad, no por job", () => {

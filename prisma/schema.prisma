@@ -155,3 +155,19 @@ model RenderJob {
   @@index([propertyId])
   @@index([status])
 }
+
+/// Lease de render por entidad — cierre de F-05.
+///
+/// La cola vive en memoria y solo protege DENTRO de un proceso. Con dos
+/// instancias (un despliegue solapado basta) las dos rendetizaban la misma
+/// propiedad a la vez. Esta tabla es el candado que si cruza procesos: se toma
+/// con un compare-and-swap y caduca sola, para que un proceso muerto no deje la
+/// entidad bloqueada para siempre.
+model RenderLease {
+  entityId  String   @id
+  jobId     String
+  expiresAt DateTime
+  updatedAt DateTime @updatedAt
+
+  @@index([expiresAt])
+}

@@ -18,6 +18,7 @@ import path from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createElement } from "react";
 import { createEngine } from "@/lib/engine/create-engine";
+import { createInMemoryRenderLock } from "@/lib/engine/ports/render-lock";
 import type {
   EntityInput,
   RenderJob,
@@ -123,6 +124,7 @@ function engine() {
       },
     },
     packages: { build: async () => ({}) } as never,
+    locks: createInMemoryRenderLock(),
     clock: { now: () => NOW },
     createBindingContext: async () => ({
       locale: "es-ES",

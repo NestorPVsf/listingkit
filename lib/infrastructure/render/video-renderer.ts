@@ -316,13 +316,15 @@ async function renderVideoArtifact(
   const timeoutMs = options.processTimeoutMs ?? DEFAULT_PROCESS_TIMEOUT_MS;
   const entitySegment = safeSegment(job.entityId);
   const jobSegment = safeSegment(job.id);
-  const directory = outputPath(entitySegment);
-  const temporaryDirectory = outputPath(entitySegment, `.tmp-${jobSegment}`);
+  // F-05: directorio propio por job, destino unico.
+  const directory = outputPath(entitySegment, jobSegment);
+  const temporaryDirectory = outputPath(entitySegment, jobSegment, ".tmp");
   const finalFileName = "video-vertical.mp4";
-  const finalPath = outputPath(entitySegment, finalFileName);
+  const finalPath = outputPath(entitySegment, jobSegment, finalFileName);
   const temporaryVideoPath = outputPath(
     entitySegment,
-    `.tmp-${jobSegment}`,
+    jobSegment,
+    ".tmp",
     `${randomUUID()}.tmp.mp4`,
   );
   const durationPlan = createVideoDurationPlan(storyboard.scenes);
@@ -351,7 +353,8 @@ async function renderVideoArtifact(
       durationPlan.scenes.map(async ({ scene }, index) => {
         const framePath = outputPath(
           entitySegment,
-          `.tmp-${jobSegment}`,
+          jobSegment,
+          ".tmp",
           `scene-${String(index).padStart(2, "0")}.png`,
         );
         await renderSceneFrame(scene, storyboard.brand, framePath);
@@ -464,7 +467,7 @@ async function renderVideoArtifact(
       });
     }
 
-    await rm(finalPath, { force: true });
+    // Sin `rm` previo: el destino es unico de este job.
     await rename(temporaryVideoPath, finalPath);
     const [fileStats, bytes] = await Promise.all([
       stat(finalPath),

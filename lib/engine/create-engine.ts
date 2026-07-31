@@ -17,6 +17,7 @@ import type { BindingContext } from "./niche-config";
 import type { NicheRegistry } from "./niche-registry";
 import type { PackageBuilder } from "./ports/package-builder";
 import type { RenderJobRepository } from "./ports/render-job-repository";
+import type { RenderLock } from "./ports/render-lock";
 import type { RendererPort } from "./ports/renderer";
 
 export interface Clock {
@@ -28,6 +29,11 @@ export interface CreateEngineOptions {
   readonly jobs: RenderJobRepository;
   readonly renderer: RendererPort;
   readonly packages: PackageBuilder;
+  /**
+   * F-05: exclusion entre PROCESOS. La cola de la raiz de composicion solo
+   * protege dentro del suyo.
+   */
+  readonly locks: RenderLock;
   readonly clock: Clock;
   readonly createBindingContext: (
     input: Readonly<EntityInput>,
@@ -138,6 +144,14 @@ function abandonActiveTasks(
   );
 }
 
+/**
+ * Vida del lease. Tiene que superar al job mas lento imaginable — 8 capturas a
+ * 90 s de techo mas un video a 120 s — para que no caduque a media faena, y ser
+ * lo bastante corto para que un proceso muerto no deje la entidad bloqueada
+ * media jornada.
+ */
+const RENDER_LEASE_TTL_MS = 15 * 60_000;
+
 export function createEngine(options: CreateEngineOptions): Engine {
   const createBindings = async (
     input: EntityInput,
@@ -219,6 +233,22 @@ export function createEngine(options: CreateEngineOptions): Engine {
       return initialJob;
     }
 
+    // F-05: nadie mas puede estar renderizando esta entidad. Se pide ANTES de
+    // marcar el job como "rendering" para no dejarlo en un estado que no es.
+    const lockAdquirido = await options.locks.acquire(
+      initialJob.entityId,
+      initialJob.id,
+      RENDER_LEASE_TTL_MS,
+    );
+    if (!lockAdquirido) {
+      throw new EngineError({
+        code: "ENTITY_RENDER_LOCKED",
+        cause: "Otro trabajo esta generando piezas de esta entidad ahora mismo.",
+        solution: "Espera a que termine y reintenta.",
+        retryable: true,
+      });
+    }
+
     const renderingJob: RenderJob = {
       ...initialJob,
       status: "rendering",
@@ -290,6 +320,9 @@ export function createEngine(options: CreateEngineOptions): Engine {
       }
     } finally {
       await session?.close();
+      // Se libera pase lo que pase: un lease retenido tras un fallo bloquearia
+      // la entidad hasta que caducase.
+      await options.locks.release(initialJob.entityId, initialJob.id);
     }
 
     const closedAt = options.clock.now();

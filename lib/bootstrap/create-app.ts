@@ -1,6 +1,8 @@
 import type { BrandBindings, EntityInput, RenderJob } from "@/lib/engine/contracts";
 import { createEngine, type Engine } from "@/lib/engine/create-engine";
+import { createPrismaArtifactRegistry } from "@/lib/infrastructure/db/artifact-registry.prisma";
 import { createPrismaRenderJobRepository } from "@/lib/infrastructure/db/render-job-repository.prisma";
+import { createPrismaRenderLock } from "@/lib/infrastructure/db/render-lock.prisma";
 import { createJszipPackageBuilder } from "@/lib/infrastructure/package/jszip-package-builder";
 import { createCompositeRenderer } from "@/lib/infrastructure/render/composite-renderer";
 import { createEmailRenderer } from "@/lib/infrastructure/render/email-renderer";
@@ -218,9 +220,11 @@ function createApplication(): Application {
       email: createEmailRenderer({ baseUrl, composeEmail: composePropertyEmail }),
       video: videoRenderer,
     }),
-    packages: createJszipPackageBuilder({
-      inmobiliaria: inmobiliariaPackagePlan,
-    }),
+    packages: createJszipPackageBuilder(
+      { inmobiliaria: inmobiliariaPackagePlan },
+      createPrismaArtifactRegistry(),
+    ),
+    locks: createPrismaRenderLock(),
     clock: {
       now: () => new Date().toISOString(),
     },

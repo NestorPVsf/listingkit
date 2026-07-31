@@ -150,15 +150,14 @@ async function captureTarget(
 ): Promise<RenderArtifact> {
   const entitySegment = safeSegment(job.entityId);
   const jobSegment = safeSegment(job.id);
-  const directory = outputPath(entitySegment);
-  const temporaryDirectory = outputPath(
-    entitySegment,
-    `.tmp-${jobSegment}`,
-  );
-  const finalPath = outputPath(entitySegment, target.fileName);
+  // F-05: directorio propio por job. Ver jobOutputDir en output-paths.ts.
+  const directory = outputPath(entitySegment, jobSegment);
+  const temporaryDirectory = outputPath(entitySegment, jobSegment, ".tmp");
+  const finalPath = outputPath(entitySegment, jobSegment, target.fileName);
   const temporaryPath = outputPath(
     entitySegment,
-    `.tmp-${jobSegment}`,
+    jobSegment,
+    ".tmp",
     `${randomUUID()}.tmp`,
   );
   await mkdir(directory, { recursive: true });
@@ -200,7 +199,8 @@ async function captureTarget(
     });
   }
 
-  await rm(finalPath, { force: true });
+  // Sin `rm` previo: el destino es unico de este job, asi que no hay nada que
+  // borrar ni ventana en la que el fichero no exista.
   await rename(temporaryPath, finalPath);
   const [fileStats, bytes] = await Promise.all([
     stat(finalPath),

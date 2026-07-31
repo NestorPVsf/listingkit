@@ -40,10 +40,16 @@ import { createJszipPackageBuilder } from "@/lib/infrastructure/package/jszip-pa
 import { inmobiliariaPackagePlan } from "@/niches/inmobiliaria/package/plan";
 
 // El empaquetador ya no es un singleton con el vertical dentro: se le pasa el
-// plan del nicho, resuelto por `job.nicheId`.
-const jszipPackageBuilder = createJszipPackageBuilder({
-  inmobiliaria: inmobiliariaPackagePlan,
-});
+// plan del nicho (resuelto por `job.nicheId`) y el registro de artefactos.
+//
+// Registro vacio a proposito: este test comprueba el contrato del ZIP con un
+// job que no ha renderizado nada, asi que todas las entradas son marcadores.
+// Que existan igualmente es justo lo que se quiere: el paquete declara lo que
+// falta en vez de omitirlo en silencio.
+const jszipPackageBuilder = createJszipPackageBuilder(
+  { inmobiliaria: inmobiliariaPackagePlan },
+  { latestByEntity: async () => [] },
+);
 import type { RenderJob } from "@/lib/engine/contracts";
 
 const PRIVATE_ADDRESS_SENTINEL = "SENTINEL-PRIVATE-4f9c2b1a";

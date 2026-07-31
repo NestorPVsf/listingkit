@@ -29,6 +29,7 @@ import type {
 } from "@/lib/engine/contracts";
 import { EngineError } from "@/lib/engine/errors";
 import type { PackageBuilder } from "@/lib/engine/ports/package-builder";
+import type { ArtifactRegistry } from "@/lib/engine/ports/artifact-registry";
 import type { NichePackagePlan } from "./niche-package-plan";
 
 const SAFE_SEGMENT = /^[a-zA-Z0-9_-]+$/;
@@ -53,7 +54,9 @@ function outputPath(...segments: readonly string[]): string {
 async function readArtifactBuffer(
   job: Readonly<RenderJob>,
   fileName: string,
+  previos: ReadonlyMap<string, string>,
 ): Promise<Buffer | null> {
+  // 1) Lo que ha producido ESTE job. Es lo mas fresco que hay.
   const doneArtifacts: readonly RenderArtifact[] = job.tasks
     .filter((task) => task.status === "done")
     .flatMap((task) => task.artifacts);
@@ -62,15 +65,21 @@ async function readArtifactBuffer(
     try {
       return await readFile(path.resolve(process.cwd(), artifact.storageKey));
     } catch {
-      // El artefacto está registrado pero el fichero ya no existe en disco —
-      // cae al intento por convención de abajo.
+      // Registrado pero ya no esta en disco: se intenta con el historico.
     }
   }
-  // Convención de playwright-renderer.ts/email-renderer.ts: nombre plano bajo
-  // output/<entityId>/<fileName>, aunque el task no lo tuviera registrado.
+
+  // 2) El ultimo artefacto de esa pieza de OTRO job anterior. Es lo que hace
+  // que el paquete siga describiendo LA PROPIEDAD y no un job concreto: tras
+  // regenerar una sola pieza, las otras catorce entradas vienen de aqui.
+  //
+  // Antes esto se resolvia leyendo `output/<entityId>/<fileName>` por
+  // convencion de nombre. Con rutas inmutables por job (F-05) esa convencion ya
+  // no existe, asi que se pregunta al registro de artefactos.
+  const storageKey = previos.get(fileName);
+  if (!storageKey) return null;
   try {
-    const entitySegment = safeSegment(job.entityId);
-    return await readFile(outputPath(entitySegment, fileName));
+    return await readFile(path.resolve(process.cwd(), storageKey));
   } catch {
     return null;
   }
@@ -121,6 +130,7 @@ function buildReadme(params: {
  */
 export function createJszipPackageBuilder(
   plans: Readonly<Record<string, NichePackagePlan>>,
+  artifacts: ArtifactRegistry,
 ): PackageBuilder {
   return {
   async build(job: Readonly<RenderJob>): Promise<Package> {
@@ -151,6 +161,14 @@ export function createJszipPackageBuilder(
         ? job.tasks.map((task) => task.piece.key)
         : job.request.requestedPieceKeys,
     );
+    // Historico de la entidad: nombre de fichero -> ruta inmutable del ultimo
+    // artefacto que lo produjo.
+    const previos = new Map(
+      (await artifacts.latestByEntity(job.entityId)).map((artefacto) => [
+        artefacto.fileName,
+        artefacto.storageKey,
+      ]),
+    );
     const zip = new JSZip();
     const manifestFiles: PackageManifest["files"][number][] = [];
     const omittedPieces: PackageManifest["omittedPieces"][number][] = [];
@@ -159,7 +177,7 @@ export function createJszipPackageBuilder(
       const specs = plan.pieceFiles[pieceKey];
       if (!specs) continue;
       for (const spec of specs) {
-        const existing = await readArtifactBuffer(job, spec.fileName);
+        const existing = await readArtifactBuffer(job, spec.fileName, previos);
 
         // Pieza que esta propiedad nunca ha generado y que este job tampoco
         // pidió: no es una omisión, sencillamente no forma parte del paquete.
@@ -221,15 +239,20 @@ export function createJszipPackageBuilder(
 
     const entitySegment = safeSegment(job.entityId);
     const jobSegment = safeSegment(job.id);
-    const directory = outputPath(entitySegment);
-    const temporaryDirectory = outputPath(entitySegment, `.tmp-${jobSegment}`);
-    const finalPath = outputPath(entitySegment, `package-${jobSegment}.zip`);
-    const temporaryPath = outputPath(entitySegment, `.tmp-${jobSegment}`, `${randomUUID()}.tmp`);
+    const directory = outputPath(entitySegment, jobSegment);
+    const temporaryDirectory = outputPath(entitySegment, jobSegment, ".tmp");
+    const finalPath = outputPath(entitySegment, jobSegment, "package.zip");
+    const temporaryPath = outputPath(
+      entitySegment,
+      jobSegment,
+      ".tmp",
+      `${randomUUID()}.tmp`,
+    );
 
     await mkdir(directory, { recursive: true });
     await mkdir(temporaryDirectory, { recursive: true });
     await writeFile(temporaryPath, zipBuffer);
-    await rm(finalPath, { force: true });
+    // El destino es unico de este job: nada que borrar antes.
     await rename(temporaryPath, finalPath);
 
     const fileStats = await stat(finalPath);
