@@ -31,7 +31,7 @@ export function LoginForm() {
       router.replace("/dashboard");
       router.refresh();
     } catch {
-      setError("No se pudo conectar. Intentalo de nuevo.");
+      setError("No se pudo conectar. Inténtalo de nuevo.");
     } finally {
       setEnviando(false);
     }

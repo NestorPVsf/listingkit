@@ -25,7 +25,9 @@ export function AppNav() {
   if (pathname === "/login" || pathname.startsWith("/onboarding")) return null;
 
   return (
-    <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur">
+    // Material translucido con el contenido pasando por debajo, no una franja
+    // opaca que come 68 px de pantalla. Ver `.glass-bar` en globals.css.
+    <header className="glass-bar sticky top-0 z-20">
       <div className="mx-auto flex w-full max-w-6xl items-center gap-8 px-6 py-4">
         <Link
           href="/dashboard"

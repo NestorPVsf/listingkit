@@ -167,7 +167,7 @@ export function OnboardingWizard({
             Sube el logo de tu agencia
           </h1>
           <p className="mb-8 text-foreground-muted">
-            Formatos admitidos: PNG, WebP o JPG. Maximo 5MB.
+            Formatos admitidos: PNG, WebP o JPG. Máximo 5 MB.
           </p>
           <label htmlFor="logo" className="mb-2 block text-sm font-medium text-foreground">
             Logo
@@ -183,7 +183,7 @@ export function OnboardingWizard({
             aria-describedby="logo-hint"
           />
           <p id="logo-hint" className="mt-2 text-sm text-foreground-muted">
-            {logoName ? `Archivo seleccionado: ${logoName}` : "Ningun archivo seleccionado todavia."}
+            {logoName ? `Archivo seleccionado: ${logoName}` : "Ningún archivo seleccionado todavía."}
           </p>
         </fieldset>
 
@@ -202,7 +202,7 @@ export function OnboardingWizard({
           </p>
           <div className="grid gap-5">
             <Field id="nombre" name="nombre" label="Nombre de la agencia" required />
-            <Field id="telefono" name="telefono" label="Telefono" type="tel" placeholder="+34 611 22 33 44" />
+            <Field id="telefono" name="telefono" label="Teléfono" type="tel" placeholder="+34 611 22 33 44" />
             <Field id="email" name="email" label="Email" type="email" />
             <Field id="web" name="web" label="Web" type="url" placeholder="https://" />
             <Field id="instagram" name="instagram" label="Instagram" placeholder="usuario (sin @)" />

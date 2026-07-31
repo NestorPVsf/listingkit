@@ -66,10 +66,10 @@ export default function VoiceSettingsPage() {
         <p className="mb-2 text-sm font-medium uppercase tracking-widest text-foreground-muted">
           Configuración
         </p>
-        <h1 className="font-display text-4xl font-semibold text-foreground">Voz y musica</h1>
+        <h1 className="font-display text-4xl font-semibold text-foreground">Voz y música</h1>
         <p className="mt-2 text-foreground-muted">
-          Valores por defecto para los videos generados. Si no hay proveedor de
-          voz configurado, el video se genera sin locucion y se indica
+          Valores por defecto para los vídeos generados. Si no hay proveedor de
+          voz configurado, el vídeo se genera sin locución y se indica
           claramente (nunca se simula que lleva voz).
         </p>
       </header>
@@ -102,7 +102,7 @@ export default function VoiceSettingsPage() {
             <span>
               <span className="block font-medium text-foreground">Sin voz</span>
               <span className="block text-sm text-foreground-muted">
-                El video lleva solo musica y texto en pantalla.
+                El vídeo lleva solo música y texto en pantalla.
               </span>
             </span>
           </label>
@@ -116,9 +116,9 @@ export default function VoiceSettingsPage() {
               className="mt-1"
             />
             <span>
-              <span className="block font-medium text-foreground">Subir narracion propia</span>
+              <span className="block font-medium text-foreground">Subir narración propia</span>
               <span className="block text-sm text-foreground-muted">
-                Usa un audio tuyo como locucion del video.
+                Usa un audio tuyo como locución del vídeo.
               </span>
             </span>
           </label>
@@ -127,7 +127,7 @@ export default function VoiceSettingsPage() {
         {tts === "narracion-propia" ? (
           <div className="mt-4">
             <label htmlFor="narration-upload" className="mb-1 block text-sm font-medium text-foreground">
-              Audio de narracion
+              Audio de narración
             </label>
             <input
               id="narration-upload"
@@ -141,19 +141,19 @@ export default function VoiceSettingsPage() {
             />
             <p className="mt-2 text-sm text-foreground-muted">
               {narrationName
-                ? `Narracion actual: ${narrationName.split(":").slice(1).join(":")}`
-                : "Ninguna narracion subida todavia."}
+                ? `Narración actual: ${narrationName.split(":").slice(1).join(":")}`
+                : "Ninguna narración subida todavía."}
             </p>
           </div>
         ) : null}
       </section>
 
-      <section aria-label="Musica de fondo">
+      <section aria-label="Música de fondo">
         <h2 className="mb-3 font-display text-2xl font-semibold text-foreground">
-          Musica de fondo por defecto
+          Música de fondo por defecto
         </h2>
         <label htmlFor="music-upload" className="mb-1 block text-sm font-medium text-foreground">
-          Archivo de musica
+          Archivo de música
         </label>
         <input
           id="music-upload"
@@ -167,8 +167,8 @@ export default function VoiceSettingsPage() {
         />
         <p className="mt-2 text-sm text-foreground-muted">
           {musicName
-            ? `Musica actual: ${musicName.split(":").slice(1).join(":")}`
-            : "Ninguna musica por defecto. Usa solo musica con licencia."}
+            ? `Música actual: ${musicName.split(":").slice(1).join(":")}`
+            : "Ninguna música por defecto. Usa solo música con licencia."}
         </p>
       </section>
     </main>

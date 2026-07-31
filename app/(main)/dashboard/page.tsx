@@ -55,11 +55,18 @@ function estadoDe(
   return { tono: "pendiente", texto: "Generar las 6 piezas" };
 }
 
+/**
+ * La chapa flota SOBRE la foto, asi que el material es oscuro en todos los
+ * casos menos uno: "sin generar" pide accion y se gana el naranja solido. Un
+ * cristal claro encima de una fachada al sol no separa nada — es el mismo
+ * fallo de legibilidad que ya nos costo una tanda de correcciones en las
+ * piezas.
+ */
 const CLASE_ESTADO: Record<EstadoTarjeta["tono"], string> = {
-  listo: "bg-secondary/10 text-secondary",
-  curso: "bg-foreground/10 text-foreground",
-  aviso: "bg-primary/10 text-primary",
-  pendiente: "bg-primary text-on-primary",
+  listo: "glass-chip",
+  curso: "glass-chip",
+  aviso: "glass-chip",
+  pendiente: "bg-primary font-semibold text-on-primary shadow-[var(--shadow-raised)]",
 };
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
@@ -132,7 +139,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             defaultValue={busqueda}
             placeholder="Buscar por zona o nombre…"
             aria-label="Buscar propiedades"
-            className="w-64 rounded-full border border-border bg-surface px-4 py-2 text-sm text-foreground placeholder:text-foreground-muted focus:border-foreground focus:outline-none"
+            className="w-64 rounded-full border border-border bg-surface px-4 py-2.5 text-sm text-foreground shadow-[var(--shadow-raised)] transition-shadow placeholder:text-foreground-muted focus:border-foreground focus:outline-none"
           />
           <button
             type="submit"
@@ -168,7 +175,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               <Link
                 href={`/properties/${propiedad.id}`}
                 data-testid={`property-history-item-${propiedad.id}`}
-                className="group block overflow-hidden rounded-lg border border-border bg-surface transition-shadow hover:shadow-[0_2px_16px_rgba(26,24,21,0.08)]"
+                className="group block overflow-hidden rounded-2xl bg-surface shadow-[var(--shadow-raised)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-[var(--shadow-lifted)]"
               >
                 <div className="relative aspect-[4/3] overflow-hidden bg-border">
                   {foto ? (
@@ -185,6 +192,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                       Sin fotos
                     </div>
                   )}
+                  <span
+                    className={`absolute bottom-3 left-3 rounded-full px-3 py-1.5 text-xs ${CLASE_ESTADO[estado.tono]}`}
+                  >
+                    {estado.texto}
+                  </span>
                 </div>
 
                 <div className="p-4">
@@ -200,11 +212,6 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                     {propiedad.bedrooms} hab · {propiedad.bathrooms} baño
                     {propiedad.bathrooms === 1 ? "" : "s"} · {propiedad.builtAreaM2} m²
                   </p>
-                  <span
-                    className={`mt-4 inline-block rounded-full px-3 py-1.5 text-xs font-semibold ${CLASE_ESTADO[estado.tono]}`}
-                  >
-                    {estado.texto}
-                  </span>
                 </div>
               </Link>
             </li>
@@ -286,7 +293,7 @@ function ComoFunciona() {
   ];
 
   return (
-    <section className="mb-10 rounded-lg border border-border bg-surface p-8">
+    <section className="mb-10 rounded-2xl bg-surface p-8 shadow-[var(--shadow-raised)]">
       <h2 className="font-display text-2xl font-semibold text-foreground">
         Una alta, seis piezas
       </h2>

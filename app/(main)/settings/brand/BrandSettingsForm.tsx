@@ -46,7 +46,7 @@ export function BrandSettingsForm({
 
       <div className="grid gap-5">
         <Field id="nombre" name="nombre" label="Nombre de la agencia" required defaultValue={defaults.nombre} />
-        <Field id="telefono" name="telefono" label="Telefono" type="tel" defaultValue={defaults.telefono} />
+        <Field id="telefono" name="telefono" label="Teléfono" type="tel" defaultValue={defaults.telefono} />
         <Field id="email" name="email" label="Email" type="email" defaultValue={defaults.email} />
         <Field id="web" name="web" label="Web" type="url" defaultValue={defaults.web} />
         <Field id="instagram" name="instagram" label="Instagram" defaultValue={defaults.instagram} />

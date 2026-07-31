@@ -36,22 +36,22 @@ type UiKey = (typeof PIECES)[number]["uiKey"];
 function textOverrideErrorMessage(code?: string, field?: string): string {
   if (code === "TEXT_OVERRIDE_LEAKS_PRIVATE_DATA") {
     const label =
-      field === "internalName" ? "la referencia interna" : "la direccion privada";
+      field === "internalName" ? "la referencia interna" : "la dirección privada";
     return `Ese texto contiene ${label} de la propiedad. Esos datos nunca salen en una pieza publica: reescribelo sin ellos.`;
   }
   if (code === "TEXT_OVERRIDE_TOO_LONG") {
-    return "El texto es demasiado largo. Recortalo e intentalo de nuevo.";
+    return "El texto es demasiado largo. Recórtalo e inténtalo de nuevo.";
   }
   if (code === "TEXT_OVERRIDE_EMPTY") {
     return "El texto no puede quedar vacio.";
   }
   if (code === "RENDER_QUEUE_FULL") {
-    return "Hay demasiadas generaciones en cola. Espera a que terminen e intentalo otra vez.";
+    return "Hay demasiadas generaciones en cola. Espera a que terminen e inténtalo otra vez.";
   }
   if (code === "RENDER_JOB_DUPLICATED") {
     return "Esa pieza ya se esta regenerando ahora mismo.";
   }
-  return "No se pudo guardar el texto. Intentalo de nuevo.";
+  return "No se pudo guardar el texto. Inténtalo de nuevo.";
 }
 
 function catalogToUiKey(catalogKey: string): UiKey | null {
@@ -227,19 +227,19 @@ export function PropertyDetail({
         }
         setGenerateError(
           response.status === 429
-            ? "Hay demasiadas generaciones en cola. Espera a que terminen e intentalo otra vez."
-            : "No se pudo iniciar la generacion. Intentalo de nuevo.",
+            ? "Hay demasiadas generaciones en cola. Espera a que terminen e inténtalo otra vez."
+            : "No se pudo iniciar la generación. Inténtalo de nuevo.",
         );
         return;
       }
       if (!body.jobId) {
-        setGenerateError("No se pudo iniciar la generacion. Intentalo de nuevo.");
+        setGenerateError("No se pudo iniciar la generación. Inténtalo de nuevo.");
         return;
       }
       setJobId(body.jobId);
       startPolling(body.jobId);
     } catch {
-      setGenerateError("Error de red al iniciar la generacion.");
+      setGenerateError("Error de red al iniciar la generación.");
     }
   }, [propertyId, startPolling]);
 
@@ -612,7 +612,7 @@ function PiecePreview({
   if (!first) {
     return (
       <p className="text-sm text-foreground-muted">
-        Sin artefacto todavia — la pieza no se ha generado.
+        Sin artefacto todavía — la pieza no se ha generado.
       </p>
     );
   }
@@ -635,7 +635,7 @@ function PiecePreview({
         src={url}
         controls
         className="max-h-72 w-full border border-border"
-        aria-label={`Video de ${label}`}
+        aria-label={`Vídeo de ${label}`}
       />
     );
   }

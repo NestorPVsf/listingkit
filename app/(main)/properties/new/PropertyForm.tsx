@@ -169,7 +169,7 @@ export function PropertyForm() {
               body: formData,
             });
             if (!response.ok) {
-              setPhotoError(`No se pudo subir "${file.name}". Revisa el formato y el tamano.`);
+              setPhotoError(`No se pudo subir "${file.name}". Revisa el formato y el tamaño.`);
               continue;
             }
             const asset = (await response.json()) as { id: string };
@@ -233,7 +233,7 @@ export function PropertyForm() {
         const detail =
           typeof body === "object" && body !== null && "detail" in body
             ? String((body as { detail: unknown }).detail)
-            : "Revisa los datos e intentalo de nuevo.";
+            : "Revisa los datos e inténtalo de nuevo.";
         setSubmitError(`No se pudo crear la propiedad. ${detail}`);
         setIsSubmitting(false);
         return;
@@ -357,19 +357,19 @@ export function PropertyForm() {
         ) : null}
       </FormSection>
 
-      <FormSection title="Ubicacion">
+      <FormSection title="Ubicación">
         <TextField name="city" label="Ciudad" required register={register} errors={errors} />
         <TextField name="district" label="Zona / barrio" register={register} errors={errors} />
         <TextField
           name="publicAddress"
-          label="Direccion publica"
+          label="Dirección pública"
           register={register}
           errors={errors}
           hint="La que aparecera en los anuncios (p.ej. una zona aproximada)."
         />
         <TextField
           name="privateAddress"
-          label="Direccion privada"
+          label="Dirección privada"
           required
           register={register}
           errors={errors}
@@ -439,7 +439,7 @@ export function PropertyForm() {
         </fieldset>
       </FormSection>
 
-      <FormSection title="Certificado energetico">
+      <FormSection title="Certificado energético">
         <SelectField
           name="energyCertificate.rating"
           label="Calificacion energetica"
@@ -465,10 +465,10 @@ export function PropertyForm() {
         />
       </FormSection>
 
-      <FormSection title="Descripcion y destacados">
+      <FormSection title="Descripción y destacados">
         <TextareaField
           name="description"
-          label="Descripcion"
+          label="Descripción"
           required
           register={register}
           errors={errors}
@@ -501,7 +501,7 @@ export function PropertyForm() {
 
       <FormSection title="Agente e inmobiliaria">
         <TextField name="agent.name" label="Nombre del agente" required register={register} errors={errors} />
-        <TextField name="agent.phone" label="Telefono del agente" required register={register} errors={errors} />
+        <TextField name="agent.phone" label="Teléfono del agente" required register={register} errors={errors} />
         <TextField name="agent.email" label="Email del agente" required register={register} errors={errors} type="email" />
         <TextField name="agency.name" label="Nombre de la inmobiliaria" required register={register} errors={errors} />
         <TextField name="agency.website" label="Web de la inmobiliaria" register={register} errors={errors} placeholder="https://" />
@@ -510,7 +510,7 @@ export function PropertyForm() {
       <FormSection title="Fotografias">
         <div className="sm:col-span-2">
           <label htmlFor="photo-upload" className="mb-1 block text-sm font-medium text-foreground">
-            Fotos de la propiedad (minimo 3, maximo 20) *
+            Fotos de la propiedad (mínimo 3, máximo 20) *
           </label>
           <input
             id="photo-upload"
@@ -523,7 +523,7 @@ export function PropertyForm() {
             className="block w-full border border-border bg-surface p-3 text-sm"
           />
           <p id="photo-upload-hint" className="mt-2 text-sm text-foreground-muted">
-            Formatos JPG, PNG o WebP. Maximo 10MB por foto.
+            Formatos JPG, PNG o WebP. Máximo 10 MB por foto.
           </p>
           {photoError ? (
             <p

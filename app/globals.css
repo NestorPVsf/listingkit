@@ -50,3 +50,82 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/*
+ * ---------------------------------------------------------------------------
+ * Materiales translucidos ("liquid glass") — SOLO en el chasis
+ * ---------------------------------------------------------------------------
+ *
+ * Donde SI: barra de navegacion, chapas sobre foto, superficies flotantes del
+ * panel. El fondo es nuestro y lo controlamos.
+ *
+ * Donde NO: las piezas generadas. Ahi manda la marca de cada agencia, y ya nos
+ * costo un fallo real — el titular blanco desaparecia sobre una foto luminosa
+ * hasta que se reforzaron los velos. Cristal encima de una foto de un cliente
+ * es ese mismo fallo con mejor nombre.
+ *
+ * Dos reglas que se respetan aqui:
+ * - **Nunca cristal claro sobre cristal claro.** Se hunde la legibilidad. Por
+ *   eso `--glass-dark` (para lo que va sobre foto) y `--glass-light` (para lo
+ *   que va sobre el fondo neutro) no se anidan nunca.
+ * - **Superficie grande = material mas espeso.** La barra difumina mas que una
+ *   chapa, y lleva sombra mas profunda.
+ */
+:root {
+  --glass-light: rgba(255, 255, 255, 0.72);
+  --glass-light-edge: rgba(255, 255, 255, 0.9);
+  --glass-dark: rgba(12, 13, 16, 0.52);
+  --glass-dark-edge: rgba(255, 255, 255, 0.18);
+  --glass-blur-bar: 24px;
+  --glass-blur-chip: 14px;
+  --shadow-raised: 0 1px 2px rgba(20, 21, 26, 0.04), 0 8px 24px rgba(20, 21, 26, 0.06);
+  --shadow-lifted: 0 2px 4px rgba(20, 21, 26, 0.06), 0 16px 40px rgba(20, 21, 26, 0.12);
+}
+
+.glass-bar {
+  background: var(--glass-light);
+  backdrop-filter: blur(var(--glass-blur-bar)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-bar)) saturate(180%);
+  /* Borde superior claro = la luz enganchando el material, no un borde. */
+  border-bottom: 1px solid rgba(20, 21, 26, 0.06);
+}
+
+/* Sobre foto: material OSCURO. Un cristal claro sobre una fachada al sol no
+   separa nada, y el texto blanco vuelve a perderse. */
+.glass-chip {
+  background: var(--glass-dark);
+  backdrop-filter: blur(var(--glass-blur-chip)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-chip)) saturate(140%);
+  border: 1px solid var(--glass-dark-edge);
+  color: #ffffff;
+  /* Vibrancy: sobre material translucido, el texto pide algo mas de peso y de
+     tracking que sobre un fondo solido. */
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/*
+ * Accesibilidad, no opcion: quien pide menos transparencia recibe superficies
+ * solidas. Se sube la opacidad y se quita el desenfoque, no se "suaviza".
+ */
+@media (prefers-reduced-transparency: reduce) {
+  .glass-bar {
+    background: var(--surface);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .glass-chip {
+    background: rgba(12, 13, 16, 0.92);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

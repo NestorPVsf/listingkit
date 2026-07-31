@@ -17,7 +17,7 @@ export default function NewPropertyPage() {
         </h1>
         <p className="mt-2 text-foreground-muted">
           Rellena los datos una sola vez: generaremos la ficha PDF, los posts de
-          Instagram, el email y el video con tu marca.
+          Instagram, el email y el vídeo con tu marca.
         </p>
       </header>
       <PropertyForm />
