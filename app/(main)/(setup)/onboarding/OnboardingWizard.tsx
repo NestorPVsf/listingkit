@@ -58,7 +58,17 @@ export function OnboardingWizard({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-6 py-16">
-      <ol className="mb-10 flex gap-6 text-sm" aria-label="Progreso del onboarding">
+      <header className="mb-8">
+        <p className="text-sm font-medium uppercase tracking-widest text-foreground-muted">
+          InmoContent OS
+        </p>
+        <p className="mt-1 text-foreground-muted">
+          Configuración inicial. Son tres pasos y se hace una sola vez: a partir
+          de aquí, todas las piezas saldrán con tu marca.
+        </p>
+      </header>
+
+      <ol className="mb-10 flex flex-wrap gap-2 text-sm" aria-label="Progreso del onboarding">
         {STEP_LABELS.map((label, index) => {
           const stepNumber = index + 1;
           const isActive = stepNumber === step;
@@ -69,13 +79,13 @@ export function OnboardingWizard({
               aria-current={isActive ? "step" : undefined}
               className={
                 isActive
-                  ? "font-semibold text-foreground"
+                  ? "rounded-full bg-foreground px-4 py-1.5 font-semibold text-background"
                   : isDone
-                    ? "text-foreground-muted"
-                    : "text-foreground-muted/50"
+                    ? "rounded-full bg-surface px-4 py-1.5 text-foreground-muted shadow-[var(--shadow-raised)]"
+                    : "rounded-full px-4 py-1.5 text-foreground-muted/50"
               }
             >
-              {stepNumber}. {label}
+              {isDone ? "✓" : stepNumber}. {label}
             </li>
           );
         })}
@@ -110,7 +120,7 @@ export function OnboardingWizard({
             Elige el estilo de tu marca
           </h1>
           <p className="mb-8 text-foreground-muted">
-            Define la identidad visual que usaran tus piezas generadas.
+            Define la identidad visual que usarán tus piezas generadas.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             {presets.map((preset) => {
@@ -119,9 +129,15 @@ export function OnboardingWizard({
               return (
                 <label
                   key={preset.id}
-                  className="cursor-pointer border-2 p-4 transition-colors focus-within:ring-2 focus-within:ring-primary"
+                  className={`cursor-pointer rounded-2xl p-5 transition-all duration-200 focus-within:ring-2 focus-within:ring-primary ${
+                    presetId === preset.id
+                      ? "shadow-[var(--shadow-lifted)] ring-2"
+                      : "shadow-[var(--shadow-raised)] hover:-translate-y-0.5"
+                  }`}
                   style={{
-                    borderColor: presetId === preset.id ? preset.colores.primary : "var(--border)",
+                    // El anillo toma el primario DEL PRESET: la seleccion se
+                    // marca con el color que estas eligiendo, no con el nuestro.
+                    ["--tw-ring-color" as string]: preset.colores.primary,
                     background: preset.colores.background,
                     color: preset.colores.text,
                   }}
@@ -215,16 +231,16 @@ export function OnboardingWizard({
             type="button"
             onClick={handleBack}
             disabled={step === 1}
-            className="px-4 py-2 text-sm font-medium text-foreground-muted disabled:opacity-40"
+            className="rounded-full px-5 py-2.5 text-sm font-medium text-foreground-muted transition-colors hover:text-foreground disabled:opacity-40"
           >
-            Atras
+            Atrás
           </button>
           <button
             type="submit"
             disabled={isPending}
-            className="bg-primary px-6 py-2 text-sm font-semibold text-on-primary disabled:opacity-60"
+            className="rounded-full bg-primary px-7 py-2.5 text-sm font-semibold text-on-primary shadow-[var(--shadow-raised)] transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            {step === TOTAL_STEPS ? (isPending ? "Guardando..." : "Finalizar") : "Siguiente"}
+            {step === TOTAL_STEPS ? (isPending ? "Guardando…" : "Finalizar") : "Siguiente"}
           </button>
         </div>
       </form>

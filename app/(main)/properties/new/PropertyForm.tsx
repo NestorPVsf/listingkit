@@ -273,33 +273,33 @@ export function PropertyForm() {
         data-testid="draft-autosave-indicator"
         role="status"
         aria-live="polite"
-        className="mb-6 text-sm text-foreground-muted"
+        className="mb-6 text-xs text-foreground-muted"
       >
         {autosaveState === "saving"
-          ? "Guardando borrador..."
+          ? "Guardando borrador…"
           : autosaveState === "saved"
-            ? "Borrador guardado automaticamente."
-            : "El borrador se guarda automaticamente mientras escribes."}
+            ? "Borrador guardado automáticamente."
+            : "El borrador se guarda automáticamente mientras escribes."}
       </p>
 
       {submitError ? (
-        <p role="alert" className="mb-6 border border-primary bg-surface p-3 text-sm font-medium text-primary">
+        <p role="alert" className="mb-6 rounded-xl border border-primary bg-surface p-4 text-sm font-medium text-primary">
           {submitError}
         </p>
       ) : null}
 
-      <FormSection title="Identificacion">
+      <FormSection title="Identificación">
         <TextField
           name="internalName"
           label="Nombre interno"
           required
           register={register}
           errors={errors}
-          hint="Solo lo ves tu; nunca aparece en las piezas publicas."
+          hint="Solo lo ves tú; nunca aparece en las piezas públicas."
         />
         <SelectField
           name="operation"
-          label="Operacion"
+          label="Operación"
           required
           register={register}
           errors={errors}
@@ -377,7 +377,7 @@ export function PropertyForm() {
         />
       </FormSection>
 
-      <FormSection title="Caracteristicas">
+      <FormSection title="Características">
         <NumberField
           name="builtAreaM2"
           label="Superficie construida (m²)"
@@ -387,7 +387,7 @@ export function PropertyForm() {
         />
         <NumberField
           name="usableAreaM2"
-          label="Superficie util (m²)"
+          label="Superficie útil (m²)"
           register={register}
           errors={errors}
         />
@@ -408,7 +408,7 @@ export function PropertyForm() {
         <TextField name="floor" label="Planta" register={register} errors={errors} />
         <NumberField
           name="constructionYear"
-          label="Ano de construccion"
+          label="Año de construcción"
           register={register}
           errors={errors}
         />
@@ -442,7 +442,7 @@ export function PropertyForm() {
       <FormSection title="Certificado energético">
         <SelectField
           name="energyCertificate.rating"
-          label="Calificacion energetica"
+          label="Calificación energética"
           register={register}
           errors={errors}
           options={[
@@ -484,7 +484,7 @@ export function PropertyForm() {
         ))}
         <TextField
           name="cta"
-          label="Llamada a la accion (CTA)"
+          label="Llamada a la acción (CTA)"
           required
           register={register}
           errors={errors}
@@ -507,7 +507,7 @@ export function PropertyForm() {
         <TextField name="agency.website" label="Web de la inmobiliaria" register={register} errors={errors} placeholder="https://" />
       </FormSection>
 
-      <FormSection title="Fotografias">
+      <FormSection title="Fotografías">
         <div className="sm:col-span-2">
           <label htmlFor="photo-upload" className="mb-1 block text-sm font-medium text-foreground">
             Fotos de la propiedad (mínimo 3, máximo 20) *
@@ -566,19 +566,28 @@ export function PropertyForm() {
         </div>
       </FormSection>
 
-      <div className="mt-10">
-        <button
-          type="submit"
-          data-testid="submit-property"
-          disabled={isSubmitting || isUploading}
-          className="bg-primary px-8 py-3 text-sm font-semibold text-on-primary disabled:opacity-60"
-        >
-          {isUploading
-            ? "Subiendo fotos..."
-            : isSubmitting
-              ? "Creando propiedad..."
-              : "Crear propiedad y generar piezas"}
-        </button>
+      {/* Barra de accion pegada abajo: el formulario mide unos 3.000 px y el
+          boton vivia al final del todo. Quien corrige un campo de arriba tenia
+          que volver a bajarlo entero para enviar. Mismo material que la barra
+          de navegacion, con el contenido pasando por debajo. */}
+      <div className="glass-bar sticky bottom-0 -mx-6 mt-8 px-6 py-4 sm:-mx-8 sm:px-8">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <p className="text-sm text-foreground-muted">
+            Al crearla se generan las 6 piezas. Tarda un par de minutos.
+          </p>
+          <button
+            type="submit"
+            data-testid="submit-property"
+            disabled={isSubmitting || isUploading}
+            className="rounded-full bg-primary px-8 py-3 text-sm font-semibold text-on-primary shadow-[var(--shadow-raised)] transition-opacity hover:opacity-90 disabled:opacity-60"
+          >
+            {isUploading
+              ? "Subiendo fotos…"
+              : isSubmitting
+                ? "Creando propiedad…"
+                : "Crear propiedad y generar piezas"}
+          </button>
+        </div>
       </div>
     </form>
   );

@@ -239,8 +239,14 @@ export function FormSection({
   readonly children: ReactNode;
 }) {
   return (
-    <section aria-label={title} className="mb-10">
-      <h2 className="mb-4 border-b border-border pb-2 font-display text-2xl font-semibold text-foreground">
+    // Cada bloque es una tarjeta con su propia superficie. Antes eran titulos
+    // separados por una linea de 1 px sobre 3.000 px de scroll continuo: sin
+    // paradas visuales, un formulario de 35 campos se lee como un muro.
+    <section
+      aria-label={title}
+      className="mb-6 rounded-2xl bg-surface p-6 shadow-[var(--shadow-raised)] sm:p-8"
+    >
+      <h2 className="mb-5 font-display text-xl font-semibold text-foreground">
         {title}
       </h2>
       <div className="grid gap-5 sm:grid-cols-2">{children}</div>
