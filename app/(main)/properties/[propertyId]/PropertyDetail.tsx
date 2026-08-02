@@ -37,21 +37,55 @@ function textOverrideErrorMessage(code?: string, field?: string): string {
   if (code === "TEXT_OVERRIDE_LEAKS_PRIVATE_DATA") {
     const label =
       field === "internalName" ? "la referencia interna" : "la dirección privada";
-    return `Ese texto contiene ${label} de la propiedad. Esos datos nunca salen en una pieza publica: reescribelo sin ellos.`;
+    return `Ese texto contiene ${label} de la propiedad. Esos datos nunca salen en una pieza pública: reescríbelo sin ellos.`;
   }
   if (code === "TEXT_OVERRIDE_TOO_LONG") {
     return "El texto es demasiado largo. Recórtalo e inténtalo de nuevo.";
   }
   if (code === "TEXT_OVERRIDE_EMPTY") {
-    return "El texto no puede quedar vacio.";
+    return "El texto no puede quedar vacío.";
   }
   if (code === "RENDER_QUEUE_FULL") {
     return "Hay demasiadas generaciones en cola. Espera a que terminen e inténtalo otra vez.";
   }
   if (code === "RENDER_JOB_DUPLICATED") {
-    return "Esa pieza ya se esta regenerando ahora mismo.";
+    return "Esa pieza ya se está regenerando ahora mismo.";
   }
   return "No se pudo guardar el texto. Inténtalo de nuevo.";
+}
+
+/**
+ * Mensajes de la reescritura con IA.
+ *
+ * El de números inventados dice CUÁLES. Un "la sugerencia no era válida" deja
+ * al operador sin saber si reintentar o escribirlo a mano; ver el 5 que se
+ * sacó de la manga le dice exactamente qué pasó y por qué le conviene que el
+ * sistema sea así de tiquismiquis.
+ */
+function aiErrorMessage(
+  code?: string,
+  invented?: readonly string[],
+  field?: string,
+): string {
+  if (code === "AI_INVENTED_NUMBERS") {
+    const numeros = invented?.length ? ` (${invented.join(", ")})` : "";
+    return `La reescritura se ha inventado datos que no están en la ficha${numeros}, así que se ha descartado. Vuelve a intentarlo o edítalo a mano.`;
+  }
+  if (code === "AI_LEAKS_PRIVATE_DATA") {
+    const label =
+      field === "internalName" ? "la referencia interna" : "la dirección privada";
+    return `La reescritura incluía ${label}, así que se ha descartado.`;
+  }
+  if (code === "AI_DISABLED") {
+    return "La reescritura con IA está desactivada en esta instalación.";
+  }
+  if (code === "AI_TOO_LONG") {
+    return "La reescritura salió demasiado larga. Prueba con un texto de partida más corto.";
+  }
+  if (code === "AI_EMPTY_RESPONSE") {
+    return "El servicio de texto no devolvió nada. Inténtalo de nuevo.";
+  }
+  return "No se pudo reescribir el texto. Inténtalo de nuevo o edítalo a mano.";
 }
 
 function catalogToUiKey(catalogKey: string): UiKey | null {
@@ -126,11 +160,14 @@ export function PropertyDetail({
   propertyId,
   initialJobId,
   initialPhotos,
+  aiEnabled = false,
 }: {
   readonly propertyId: string;
   readonly initialJobId: string | null;
   readonly initialPhotos: readonly PhotoItem[];
+  readonly aiEnabled?: boolean;
 }) {
+  const [suggesting, setSuggesting] = useState(false);
   const [job, setJob] = useState<RenderJobDto | null>(null);
   const [jobId, setJobId] = useState<string | null>(initialJobId);
   const [generateError, setGenerateError] = useState<string | null>(null);
@@ -327,6 +364,42 @@ export function PropertyDetail({
     setEditingPiece(null);
   }
 
+  /**
+   * Pide una reescritura y la deja EN EL EDITOR, sin guardar. La sugerencia es
+   * una propuesta: quien conoce el piso decide si "zona tranquila" es verdad.
+   * Lo objetivo —numeros inventados— ya lo ha rechazado el servidor.
+   */
+  async function handleSuggest() {
+    if (editorText.trim().length === 0) return;
+    setSuggesting(true);
+    setEditorError(null);
+    try {
+      const response = await fetch(
+        `/api/properties/${propertyId}/piece-text/suggest`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: editorText.trim() }),
+        },
+      );
+      const body = (await response.json().catch(() => ({}))) as {
+        suggestion?: string;
+        error?: string;
+        invented?: readonly string[];
+        field?: string;
+      };
+      if (!response.ok || !body.suggestion) {
+        setEditorError(aiErrorMessage(body.error, body.invented, body.field));
+        return;
+      }
+      setEditorText(body.suggestion);
+    } catch {
+      setEditorError("No se pudo conectar con el servicio de texto. Inténtalo de nuevo.");
+    } finally {
+      setSuggesting(false);
+    }
+  }
+
   async function handleRegenerate(uiKey: UiKey) {
     const piece = PIECES.find((candidate) => candidate.uiKey === uiKey);
     if (!piece) return;
@@ -499,14 +572,28 @@ export function PropertyDetail({
                         {editorError}
                       </p>
                     ) : null}
-                    <button
-                      type="button"
-                      data-testid={`save-piece-edit-${piece.uiKey}`}
-                      onClick={() => void handleSaveEdit(piece.uiKey)}
-                      className="mt-2 bg-primary px-4 py-2 text-xs font-semibold text-on-primary"
-                    >
-                      Guardar texto
-                    </button>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        data-testid={`save-piece-edit-${piece.uiKey}`}
+                        onClick={() => void handleSaveEdit(piece.uiKey)}
+                        className="rounded-full bg-primary px-4 py-2 text-xs font-semibold text-on-primary"
+                      >
+                        Guardar texto
+                      </button>
+                      {aiEnabled ? (
+                        <button
+                          type="button"
+                          data-testid={`suggest-piece-text-${piece.uiKey}`}
+                          onClick={() => void handleSuggest()}
+                          disabled={suggesting}
+                          title="Reescribe el texto que hay ahora. No inventa datos: si lo intenta, se rechaza."
+                          className="rounded-full border border-border px-4 py-2 text-xs font-medium text-foreground disabled:opacity-60"
+                        >
+                          {suggesting ? "Reescribiendo…" : "Reescribir con IA"}
+                        </button>
+                      ) : null}
+                    </div>
                   </div>
                 ) : null}
 

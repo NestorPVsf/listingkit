@@ -147,6 +147,41 @@ const CONFIGURACION: readonly Seccion[] = [
     ),
   },
   {
+    id: "ia",
+    titulo: "Reescritura con IA (opcional)",
+    cuerpo: (
+      <>
+        <p>
+          Viene <strong>desactivada</strong>. Si se activa, aparece un botón
+          «Reescribir con IA» al editar el texto de una pieza: coge lo que ya
+          hay escrito y lo reformula. <strong>No escribe desde cero</strong> y
+          no guarda nada — deja la propuesta en el editor para que la leas.
+        </p>
+        <p>
+          Antes de enseñártela, el sistema comprueba que{" "}
+          <strong>no se haya inventado ningún dato numérico</strong>: si aparece
+          un metro cuadrado, un año o un «a 5 minutos» que no está en la ficha ni
+          en tu texto original, la sugerencia se descarta entera y se te dice qué
+          número se inventó. Es la protección que importa, porque un dato falso
+          en un anuncio es responsabilidad de la agencia.
+        </p>
+        <p>
+          Lo que <em>no</em> puede comprobar una máquina es si «zona tranquila»
+          es cierto. Por eso la propuesta nunca se publica sola: la última
+          lectura es tuya.
+        </p>
+        <p>
+          Para activarla hacen falta tres variables en el servidor:{" "}
+          <code>AI_TEXT_ENABLED=1</code>, <code>AI_TEXT_API_KEY</code> y{" "}
+          <code>AI_TEXT_MODEL</code>. Opcionalmente{" "}
+          <code>AI_TEXT_BASE_URL</code> si se usa un proveedor distinto de
+          OpenAI. El coste por reescritura es de céntimos, pero lo paga quien
+          ponga la clave.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "copias",
     titulo: "Copias de seguridad",
     cuerpo: (
@@ -171,6 +206,7 @@ const CONFIGURACION: readonly Seccion[] = [
           No importa propiedades desde tu CRM: los datos se introducen aquí.
         </li>
         <li>No traduce las piezas a otros idiomas.</li>
+        <li>No retoca ni genera fotografías.</li>
         <li>No hay usuarios ni roles, ni registro de quién hizo qué.</li>
       </ul>
     ),

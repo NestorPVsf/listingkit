@@ -43,6 +43,9 @@ export default async function PropertyPage({ params }: PropertyPageProps) {
 
       <PropertyDetail
         propertyId={property.id}
+        // Se lee en el servidor: el cliente nunca ve la configuracion de IA, y
+        // sin esto habria un boton que solo sirve para dar un error.
+        aiEnabled={process.env.AI_TEXT_ENABLED === "1"}
         initialJobId={latestJob?.id ?? null}
         initialPhotos={property.photos.map((photo) => ({
           id: photo.id,
