@@ -214,11 +214,33 @@ const CONFIGURACION: readonly Seccion[] = [
         Hay dos cosas que guardar y están en el servidor:{" "}
         <code>prisma/dev.db</code> (las propiedades y los textos) y las carpetas{" "}
         <code>uploads/</code> y <code>output/</code> (las fotos que subes y las
-        piezas generadas). Con esas tres rutas se restaura todo.{" "}
-        <strong>Las piezas generadas se acumulan</strong>: cada regeneración deja
-        su copia, a propósito, para que un enlace enviado hace meses siga
-        funcionando. Conviene vigilar el espacio en disco de vez en cuando.
+        piezas generadas). Con esas tres rutas se restaura todo.
       </p>
+    ),
+  },
+  {
+    id: "espacio",
+    titulo: "Espacio en disco",
+    cuerpo: (
+      <>
+        <p>
+          Una generación completa ocupa unos <strong>18 MB</strong>, de los que
+          el vídeo es más de la mitad. Al regenerar, la copia anterior no se
+          borra en el acto: de cada propiedad se conservan{" "}
+          <strong>las tres últimas generaciones superadas</strong> —el
+          «deshacer» de cuando el resultado nuevo no convence— además de{" "}
+          <em>todo lo que esté vigente</em>. Lo vigente no se toca nunca: el ZIP
+          se arma con la última versión de cada pieza, y si regeneraste solo el
+          post, la ficha en PDF sigue viviendo en la carpeta antigua.
+        </p>
+        <p>
+          Cuando el panel avise de que queda poco disco, lo que libera espacio de
+          verdad es <strong>borrar propiedades que ya no estén en cartera</strong>
+          : se van con ellas sus fotos y todas sus piezas. Las fotos y los audios
+          se recomprimen al subirlos, así que por ahí ya no queda mucho que
+          rascar.
+        </p>
+      </>
     ),
   },
   {
