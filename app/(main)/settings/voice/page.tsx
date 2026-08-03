@@ -19,6 +19,24 @@ const NARRATION_STORAGE_KEY = "inmocontent:default-narration-asset";
 
 type TtsChoice = "sin-voz" | "narracion-propia";
 
+/**
+ * El audio se recodifica al subirlo, asi que hay fallos nuevos que el operador
+ * puede arreglar solo — y uno, el de FFmpeg, que no. Traducirlos aqui evita el
+ * "revisa el formato" generico, que no dice nada cuando el formato esta bien.
+ */
+function motivo(detalle: string | undefined): string {
+  switch (detalle) {
+    case "UPLOAD_AUDIO_SIZE_INVALID":
+      return "El archivo supera los 50 MB.";
+    case "UPLOAD_AUDIO_INVALID":
+      return "El archivo no se puede leer como audio.";
+    case "UPLOAD_AUDIO_TRANSCODE_UNAVAILABLE":
+      return "Falta FFmpeg en el servidor; sin él tampoco se puede generar el vídeo.";
+    default:
+      return "Revisa el formato: se aceptan MP3, WAV, M4A, AAC y OGG.";
+  }
+}
+
 export default function VoiceSettingsPage() {
   const [tts, setTts] = useState<TtsChoice>("sin-voz");
   const [musicName, setMusicName] = useState<string | null>(null);
@@ -48,7 +66,10 @@ export default function VoiceSettingsPage() {
     try {
       const response = await fetch("/api/assets", { method: "POST", body: formData });
       if (!response.ok) {
-        setError(`No se pudo subir "${file.name}". Revisa el formato.`);
+        const cuerpo = (await response.json().catch(() => null)) as {
+          detail?: string;
+        } | null;
+        setError(`No se pudo subir "${file.name}". ${motivo(cuerpo?.detail)}`);
         return;
       }
       const asset = (await response.json()) as { id: string };
@@ -71,6 +92,11 @@ export default function VoiceSettingsPage() {
           Valores por defecto para los vídeos generados. Si no hay proveedor de
           voz configurado, el vídeo se genera sin locución y se indica
           claramente (nunca se simula que lleva voz).
+        </p>
+        <p className="mt-2 text-sm text-foreground-muted">
+          Los audios se recomprimen al subirlos (M4A, 48 kHz) y se les quitan las
+          etiquetas del archivo original. Se aceptan hasta 50 MB y se usan los
+          primeros 10 minutos.
         </p>
       </header>
 

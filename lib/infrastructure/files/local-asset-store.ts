@@ -14,6 +14,12 @@ import {
   photoUploadSchema,
   sanitizeFileName,
 } from "@/lib/infrastructure/files/upload-contract";
+import {
+  AUDIO_OUTPUT_EXTENSION,
+  AUDIO_OUTPUT_MEDIA_TYPE,
+  transcodeAudio,
+  type AudioTranscoder,
+} from "@/lib/infrastructure/files/transcode-audio";
 
 const imageAssetMetadataSchema = z.object({
   id: z.string().uuid(),
@@ -58,18 +64,6 @@ const MEDIA_BY_FORMAT = {
   png: { mediaType: "image/png", extension: ".png" },
   webp: { mediaType: "image/webp", extension: ".webp" },
 } as const;
-
-const AUDIO_EXTENSION_BY_MEDIA_TYPE: Readonly<Record<
-  StoredAudioAsset["mediaType"],
-  string
->> = {
-  "audio/mpeg": ".mp3",
-  "audio/wav": ".wav",
-  "audio/x-wav": ".wav",
-  "audio/mp4": ".m4a",
-  "audio/aac": ".aac",
-  "audio/ogg": ".ogg",
-};
 
 function assetDirectory(): string {
   return path.resolve(process.cwd(), "uploads", "assets");
@@ -213,27 +207,43 @@ async function recodeWithoutMetadata(
   }
 }
 
-export async function storeAudioUpload(file: File): Promise<AssetRef> {
+/** Tope de la SUBIDA. Lo que acaba en disco es la version recodificada. */
+const MAX_AUDIO_UPLOAD_BYTES = 50 * 1024 * 1024;
+
+export async function storeAudioUpload(
+  file: File,
+  transcode: AudioTranscoder = transcodeAudio,
+): Promise<AssetRef> {
   const safeFileName = sanitizeUploadName(file.name);
-  const mediaType = audioAssetMetadataSchema.shape.mediaType.parse(file.type);
-  if (file.size <= 0 || file.size > 50 * 1024 * 1024) {
+  // El tipo declarado solo decide si aceptamos la subida; el fichero que se
+  // guarda es siempre M4A/AAC, lo mandara quien lo mandara.
+  audioAssetMetadataSchema.shape.mediaType.parse(file.type);
+  if (file.size <= 0 || file.size > MAX_AUDIO_UPLOAD_BYTES) {
     throw new Error("UPLOAD_AUDIO_SIZE_INVALID");
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+  // Nunca se persiste el buffer original: pesa hasta 50 MB, arrastra etiquetas
+  // del fichero de origen y nadie ha comprobado que sea audio de verdad.
+  const recodificado = await transcode(Buffer.from(await file.arrayBuffer()));
+  // Un resultado vacio pasaria hasta el disco y solo se notaria al LEER el
+  // asset: `bytes` positivo es parte del schema, asi que el JSON guardado ya no
+  // valida y el audio queda ilegible para siempre. Lo destapo el test.
+  if (recodificado.byteLength === 0) {
+    throw new Error("UPLOAD_AUDIO_INVALID");
+  }
   const id = randomUUID();
-  const storageFileName = `${id}${AUDIO_EXTENSION_BY_MEDIA_TYPE[mediaType]}`;
+  const storageFileName = `${id}${AUDIO_OUTPUT_EXTENSION}`;
   const storageKey = path
     .join("uploads", "assets", storageFileName)
     .replaceAll("\\", "/");
   const metadata: StoredAudioAsset = {
     id,
     kind: "audio",
-    mediaType,
+    mediaType: AUDIO_OUTPUT_MEDIA_TYPE,
     fileName: safeFileName,
     storageKey,
-    bytes: buffer.byteLength,
-    sha256: createHash("sha256").update(buffer).digest("hex"),
+    bytes: recodificado.byteLength,
+    sha256: createHash("sha256").update(recodificado).digest("hex"),
   };
   const directory = assetDirectory();
   const temporarySuffix = randomUUID();
@@ -247,7 +257,7 @@ export async function storeAudioUpload(file: File): Promise<AssetRef> {
 
   await mkdir(directory, { recursive: true });
   try {
-    await writeFile(temporaryBinary, buffer, { flag: "wx" });
+    await writeFile(temporaryBinary, recodificado, { flag: "wx" });
     await writeFile(
       temporaryMetadata,
       `${JSON.stringify(metadata)}\n`,
