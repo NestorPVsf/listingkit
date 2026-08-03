@@ -44,6 +44,22 @@ export class TextOverrideRejected extends Error {
 export interface PrivatePropertyFields {
   readonly privateAddress?: string | null;
   readonly internalName?: string | null;
+  /**
+   * Lo que el operador YA ha decidido publicar. Se resta de la comparacion.
+   *
+   * Sin esto la red se cierra sobre el propio usuario: la direccion privada
+   * suele EMPEZAR por la zona ("Centro, Alicante — C/ Tal, 3º B"), asi que el
+   * tramo anterior a la primera coma era "Centro"... y cualquier texto con la
+   * palabra "Centro" quedaba rechazado como fuga de datos privados. Escribir
+   * "Piso en el Centro de Alicante" —el titular mas normal del mundo— daba
+   * error. Lo destapo la reescritura con IA, pero el editor manual lo tenia
+   * igual desde el principio.
+   *
+   * La regla, dicha en una linea: si esta publicado, no es privado.
+   */
+  readonly publicAddress?: string | null;
+  readonly city?: string | null;
+  readonly district?: string | null;
 }
 
 /** minusculas, sin tildes, sin puntuacion y con espacios colapsados. */
@@ -61,13 +77,20 @@ function normalize(value: string): string {
  * anterior a la primera coma (en una direccion, "calle y numero" — que es
  * justo el trozo que se pega suelto).
  */
-function comparableForms(value: string): readonly string[] {
+function comparableForms(
+  value: string,
+  publicHaystack: string,
+): readonly string[] {
   const forms = new Set<string>();
   for (const candidate of [value, value.split(",")[0] ?? ""]) {
     const normalized = normalize(candidate);
-    if (normalized.length >= MIN_COMPARABLE_LENGTH) {
-      forms.add(normalized);
-    }
+    if (normalized.length < MIN_COMPARABLE_LENGTH) continue;
+    // Si la forma cabe dentro de lo que ya se publica, no delata nada. Ojo:
+    // esto NO desarma el control — la direccion privada COMPLETA nunca esta
+    // contenida en la publica (por eso es privada), asi que el copia-pega
+    // entero, que es el accidente real, se sigue cazando.
+    if (publicHaystack.length > 0 && publicHaystack.includes(normalized)) continue;
+    forms.add(normalized);
   }
   return [...forms];
 }
@@ -89,6 +112,11 @@ export function assertPublicTextOverride(
   }
 
   const haystack = normalize(trimmed);
+  const publicHaystack = normalize(
+    [privateFields.publicAddress, privateFields.city, privateFields.district]
+      .filter((valor): valor is string => Boolean(valor))
+      .join(" "),
+  );
   const fields: readonly (readonly [PrivateField, string | null | undefined])[] = [
     ["privateAddress", privateFields.privateAddress],
     ["internalName", privateFields.internalName],
@@ -96,7 +124,7 @@ export function assertPublicTextOverride(
 
   for (const [field, value] of fields) {
     if (!value) continue;
-    for (const form of comparableForms(value)) {
+    for (const form of comparableForms(value, publicHaystack)) {
       if (haystack.includes(form)) {
         throw new TextOverrideRejected("TEXT_OVERRIDE_LEAKS_PRIVATE_DATA", field);
       }

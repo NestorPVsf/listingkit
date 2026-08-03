@@ -95,3 +95,55 @@ describe("assertPublicTextOverride — la direccion privada no vuelve por el edi
     ).toBe("Atico A1 con vistas");
   });
 });
+
+/**
+ * La red no puede cerrarse sobre el propio usuario.
+ *
+ * Lo destapo la reescritura con IA sobre la propiedad demo, pero el editor
+ * manual tenia el mismo fallo desde el principio: la direccion privada suele
+ * EMPEZAR por la zona ("Centro, Alicante — C/ Tal, 3º B"), asi que el tramo
+ * anterior a la primera coma era "Centro" y cualquier titular que dijera
+ * "Centro" se rechazaba como fuga. El titular mas normal del mundo.
+ */
+describe("no confunde lo publicado con lo privado", () => {
+  const PROPIEDAD = {
+    privateAddress:
+      "Centro, Alicante — cerca C/ Alfonso el Sabio, 3ª planta con ascensor",
+    internalName: "Piso reforma Centro",
+    publicAddress: "Centro, Alicante (cerca C/ Alfonso el Sabio)",
+    city: "Alicante",
+    district: "Centro",
+  };
+
+  it("deja pasar la zona que el propio operador publica", () => {
+    expect(
+      assertPublicTextOverride("Piso de 3 hab. en el Centro de Alicante", PROPIEDAD),
+    ).toBe("Piso de 3 hab. en el Centro de Alicante");
+  });
+
+  it("deja pasar la direccion PUBLICA entera", () => {
+    // Es literalmente el campo que existe para publicarse.
+    expect(
+      assertPublicTextOverride(`Piso en ${PROPIEDAD.publicAddress}`, PROPIEDAD),
+    ).toContain("Alfonso el Sabio");
+  });
+
+  it("y sigue cazando la direccion privada completa, que es el accidente real", () => {
+    // Lo que hay que impedir es el copia-pega del campo interno: la planta y
+    // el portal no estan en la version publica, asi que la forma completa
+    // nunca se cuela por la excepcion de arriba.
+    expect(() =>
+      assertPublicTextOverride(`Piso en ${PROPIEDAD.privateAddress}`, PROPIEDAD),
+    ).toThrow(TextOverrideRejected);
+  });
+
+  it("sin campos publicos declarados se comporta como antes", () => {
+    // Compatibilidad: los tres endpoints pasan la fila entera, pero un
+    // consumidor que solo tenga los campos privados no debe perder proteccion.
+    expect(() =>
+      assertPublicTextOverride("Piso en Centro", {
+        privateAddress: PROPIEDAD.privateAddress,
+      }),
+    ).toThrow(TextOverrideRejected);
+  });
+});

@@ -59,6 +59,14 @@ export default defineConfig({
       name: "production",
       testMatch: /prod-.*\.spec\.ts/,
       use: { ...devices["Desktop Chrome"], baseURL: PROD_BASE_URL },
+      // Los dos proyectos generan piezas de verdad (Chromium + FFmpeg). Corrian
+      // a la vez y se peleaban por la CPU: un render se pasaba de su techo y un
+      // test caia sin que nada estuviera roto — dos falsos rojos en dos tandas,
+      // los dos en el mismo test, los dos verdes al repetirlos en aislamiento.
+      // Un test que grita "lobo" es peor que uno lento: se acaba ignorando el
+      // dia que el lobo viene. Se serializan los proyectos; dentro de cada uno
+      // sigue habiendo paralelismo.
+      dependencies: ["chromium"],
     },
   ],
   webServer: [
