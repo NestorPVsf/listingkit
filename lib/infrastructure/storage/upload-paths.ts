@@ -16,6 +16,29 @@
  * La raiz por defecto es `uploads`, asi que sin configurar nada todo queda
  * exactamente donde estaba — las claves de almacenamiento ya guardadas siguen
  * resolviendo.
+ *
+ * ---------------------------------------------------------------------------
+ * Lo que esto NO es
+ * ---------------------------------------------------------------------------
+ * **No es una frontera de seguridad.** `UPLOADS_DIR` se acepta tal cual, ruta
+ * absoluta incluida: quien la configura es quien administra la instalacion y ya
+ * puede leer y escribir donde le parezca. Validarla contra el propio proyecto
+ * daria una sensacion de control que no existe, y a cambio impediria el caso
+ * legitimo de montar las subidas en otro disco.
+ *
+ * **Las comprobaciones son lexicas, no del sistema de ficheros.** `path.relative`
+ * detecta `..`, rutas absolutas y separadores nativos, pero `readFile` y
+ * `writeFile` siguen los enlaces simbolicos: un symlink plantado DENTRO de
+ * `uploads/brand` apuntando fuera se serviria igual. Cerrarlo del todo exige
+ * canonicalizar con `realpath` en cada lectura. No se hace porque plantar ese
+ * symlink ya requiere acceso de escritura al disco del servidor, y quien lo
+ * tiene no necesita este rodeo. Queda escrito para que sea una decision y no un
+ * olvido.
+ *
+ * **La raiz se elige al instalar y no se cambia con datos dentro.** Las claves
+ * de almacenamiento se guardan como se crearon; cambiar la raiz las deja
+ * apuntando al sitio viejo y se rechazan por caer fuera de la nueva. Mover los
+ * ficheros a mano no lo arregla.
  */
 import path from "node:path";
 

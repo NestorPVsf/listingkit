@@ -6,6 +6,13 @@
  */
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+
+// Raiz propia de ESTE fichero. Vitest ejecuta los ficheros de test en
+// paralelo, asi que compartir `uploads-test-unit` entre todos revive el
+// falso fallo que este aislamiento venia a matar: un test veia aparecer
+// ficheros de otro y acusaba al almacen de dejar basura.
+process.env.UPLOADS_DIR = "uploads-test-unit/brand-asset-route";
+
 import { brandDir } from "@/lib/infrastructure/storage/upload-paths";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";

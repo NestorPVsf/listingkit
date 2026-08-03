@@ -8,6 +8,13 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { rm } from "node:fs/promises";
 import path from "node:path";
+
+// Raiz propia de ESTE fichero. Vitest ejecuta los ficheros de test en
+// paralelo, asi que compartir `uploads-test-unit` entre todos revive el
+// falso fallo que este aislamiento venia a matar: un test veia aparecer
+// ficheros de otro y acusaba al almacen de dejar basura.
+process.env.UPLOADS_DIR = "uploads-test-unit/image-metadata-strip";
+
 import { assetsDir } from "@/lib/infrastructure/storage/upload-paths";
 import sharp from "sharp";
 import {

@@ -41,7 +41,10 @@ const MAX_LOGO_DIMENSION = 1600;
 // La ruta publica sigue siendo `/uploads/brand/...` (es una ruta de la app,
 // no del disco), pero el directorio real es configurable: los tests no
 // pueden escribir donde estan los logos del usuario.
-const UPLOAD_DIR = brandDir();
+//
+// Se resuelve en cada uso y NO se congela en una constante de modulo: en ESM
+// los imports se evaluan antes que nada, asi que una constante aqui capturaria
+// el valor que hubiera en ese instante. El almacen de assets ya lo hace asi.
 
 function toSafeSlug(name: string): string {
   const withoutExt = name.replace(/\.[^.]+$/, "");
@@ -108,8 +111,9 @@ export async function storeBrandLogo(file: File): Promise<string> {
   // generado por nosotros.
   const validatedFileName = sanitizeFileName(fileName);
 
-  await mkdir(UPLOAD_DIR, { recursive: true });
-  await writeFile(path.join(UPLOAD_DIR, validatedFileName), recoded);
+  const uploadDir = brandDir();
+  await mkdir(uploadDir, { recursive: true });
+  await writeFile(path.join(uploadDir, validatedFileName), recoded);
   return `/uploads/brand/${validatedFileName}`;
 }
 

@@ -20,12 +20,12 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { storageKeyOf, uploadsRoot } from "@/lib/infrastructure/storage/upload-paths";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@prisma/client";
 import sharp from "sharp";
 import { propertyInputSchema, type PropertyInput } from "../niches/inmobiliaria/schema.ts";
 import { brandConfigSchema, brandPresetSchema } from "../niches/inmobiliaria/brand.schema.ts";
+import { storageKeyOf, uploadsRoot } from "../lib/infrastructure/storage/upload-paths.ts";
 
 const UPLOADS_ROOT = uploadsRoot();
 const ASSETS_DIR = path.join(UPLOADS_ROOT, "assets");

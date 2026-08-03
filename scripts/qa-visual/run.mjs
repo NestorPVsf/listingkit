@@ -30,7 +30,10 @@ fs.mkdirSync(outDir, { recursive: true });
 // --- 1. Crear Brand en SQLite directo (mismo shape que onboarding actions.ts) ---
 const db = new Database(path.join(process.cwd(), "prisma/dev.db"));
 const brandId = randomUUID();
-const logoDir = path.join(process.cwd(), "uploads/brand");
+// Misma raiz que la app: si el servidor corre con UPLOADS_DIR y este script
+// no lo mira, deja el logo donde nadie lo va a buscar.
+const uploadsRoot = process.env.UPLOADS_DIR?.trim() || "uploads";
+const logoDir = path.resolve(process.cwd(), uploadsRoot, "brand");
 fs.mkdirSync(logoDir, { recursive: true });
 const logoFileName = `qa-${presetId}.png`;
 fs.copyFileSync(path.join(process.cwd(), "scripts/qa-visual/logo.png"), path.join(logoDir, logoFileName));
