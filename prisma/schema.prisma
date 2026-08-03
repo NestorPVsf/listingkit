@@ -85,6 +85,16 @@ model Property {
   narrationAssetId        String?
   explicitlyAllowedClaims Json    @default("[]")
 
+  /**
+   * `<id>` de la propiedad en el feed del CRM del que se importo. Es lo que
+   * permite reimportar el mismo fichero sin duplicar: la segunda pasada
+   * actualiza en vez de crear. Nulo en las creadas a mano.
+   *
+   * Unico, y en SQLite varios NULL conviven en un indice unico — que es justo
+   * lo que hace falta aqui.
+   */
+  externalRef String? @unique
+
   // F-06: version de "lo que se renderiza". Sube con CUALQUIER cambio que
   // altere las piezas — el orden de las fotos, la foto principal, un texto
   // editado a mano. `updatedAt` no vale: reordenar fotos toca PropertyPhoto,

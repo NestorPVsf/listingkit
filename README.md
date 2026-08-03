@@ -46,6 +46,10 @@ nuevo no toca `lib/`; hay una plantilla de PRP en `.specs/templates/`.
 - **La IA reescribe, no inventa.** Apagada por defecto. Cuando se activa parte de
   un texto existente, y la salida se valida: no puede introducir ningún número que
   no esté en la ficha o en el texto original. Si lo intenta, se descarta entera.
+- **La importación no crea a ciegas.** Lee el XML del CRM (formato Kyero) y
+  produce un informe de qué entraría y qué falta antes de escribir nada. Las
+  fotos se descargan con protección SSRF: se resuelven las IPs y se rechazan las
+  privadas, la de metadatos de la nube y los saltos de redirección sin validar.
 - **Texto por plantillas como camino principal.** Determinista, sin coste y sin
   inventar. Ver `docs/architecture/niche-engine.md`.
 
@@ -67,7 +71,7 @@ El nombre visible se cambia por instalación con `NEXT_PUBLIC_APP_NAME`.
 ## Comprobaciones
 
 ```bash
-npm test            # 336 unitarios
+npm test            # 372 unitarios
 npm run test:e2e    # 27 end-to-end (desarrollo + build de producción real)
 ```
 

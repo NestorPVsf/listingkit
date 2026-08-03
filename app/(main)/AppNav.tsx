@@ -13,6 +13,7 @@ import { usePathname } from "next/navigation";
 
 const ENLACES = [
   { href: "/dashboard", label: "Propiedades" },
+  { href: "/import", label: "Importar" },
   { href: "/settings/brand", label: "Marca" },
   { href: "/settings/voice", label: "Voz y música" },
   { href: "/help", label: "Cómo funciona" },

@@ -61,6 +61,30 @@ const USO: readonly Seccion[] = [
     ),
   },
   {
+    id: "importar",
+    titulo: "Traer tu cartera del CRM",
+    cuerpo: (
+      <>
+        <p>
+          En <strong>Importar</strong> puedes subir el XML que tu CRM ya genera
+          para los portales (el formato Kyero, que exportan Witei e Inmovilla
+          entre otros). Verás primero <em>qué entraría</em>: no se guarda nada
+          hasta que lo confirmas.
+        </p>
+        <p>
+          Un feed de portal es público, así que <strong>no trae la dirección
+          exacta ni el agente</strong>. Lo de la agencia se rellena con tu marca;
+          la dirección queda marcada como pendiente y hay que completarla antes
+          de trabajar esa propiedad. Las fotos sí se descargan.
+        </p>
+        <p>
+          Reimportar el mismo fichero <strong>actualiza</strong> las propiedades
+          ya traídas en vez de duplicarlas.
+        </p>
+      </>
+    ),
+  },
+  {
     id: "direccion",
     titulo: "La dirección privada nunca sale",
     cuerpo: (
@@ -203,9 +227,6 @@ const CONFIGURACION: readonly Seccion[] = [
     cuerpo: (
       <ul className="list-disc space-y-2 pl-6">
         <li>No publica en Idealista, Fotocasa ni en redes sociales.</li>
-        <li>
-          No importa propiedades desde tu CRM: los datos se introducen aquí.
-        </li>
         <li>No traduce las piezas a otros idiomas.</li>
         <li>No retoca ni genera fotografías.</li>
         <li>No hay usuarios ni roles, ni registro de quién hizo qué.</li>
