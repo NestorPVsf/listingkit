@@ -285,6 +285,9 @@ export function PropertyDetail({
     if (startedRef.current) return;
     startedRef.current = true;
     if (initialJobId) {
+      // Reanudar el polling de un job ya existente solo puede decidirse tras
+      // montar: depende de initialJobId, que llega del servidor.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       startPolling(initialJobId);
     } else {
       void triggerGenerate();
@@ -748,6 +751,9 @@ function PdfPreview({ url, label }: { readonly url: string; readonly label: stri
   const [canPreview, setCanPreview] = useState(false);
 
   useEffect(() => {
+    // navigator no existe en el servidor: detectar el visor de PDF solo es
+    // posible ya montado.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCanPreview(
       typeof navigator !== "undefined" &&
         "pdfViewerEnabled" in navigator &&

@@ -46,6 +46,9 @@ export default function VoiceSettingsPage() {
 
   useEffect(() => {
     const savedTts = window.localStorage.getItem(TTS_STORAGE_KEY);
+    // localStorage no existe durante el render en servidor: hidratar aqui es
+    // la unica via.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (savedTts === "sin-voz" || savedTts === "narracion-propia") setTts(savedTts);
     setMusicName(window.localStorage.getItem(MUSIC_STORAGE_KEY));
     setNarrationName(window.localStorage.getItem(NARRATION_STORAGE_KEY));
