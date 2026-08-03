@@ -32,6 +32,12 @@ jobs:
       - run: npx prisma generate
 
       - run: npm run lint
+
+      # Un test unitario (playwright-capture-timeout) lanza un navegador real
+      # para comprobar el techo duro por captura, asi que el shell headless
+      # tiene que existir. Es el unico navegador que hace falta aqui.
+      - run: npx playwright install --with-deps chromium-headless-shell
+
       - run: npm test
       - run: npm run build
 
