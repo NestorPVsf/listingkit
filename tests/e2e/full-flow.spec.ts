@@ -346,6 +346,7 @@ test.describe("Flujo completo de usuario por la UI — InmoContent OS", () => {
     };
     expect(regenerationJobId, "la regeneracion debe devolver un jobId").toBeTruthy();
 
+    let estadoFinal = "unknown";
     await expect
       .poll(
         async () => {
@@ -353,7 +354,8 @@ test.describe("Flujo completo de usuario por la UI — InmoContent OS", () => {
             `/api/render-jobs/${regenerationJobId}`,
           );
           const body = (await status.json()) as { status?: string };
-          return body.status ?? "unknown";
+          estadoFinal = body.status ?? "unknown";
+          return estadoFinal;
         },
         // La cola de render es serie (una tarea a la vez): esta regeneracion
         // puede esperar detras de la generacion completa anterior, que incluye
@@ -361,6 +363,16 @@ test.describe("Flujo completo de usuario por la UI — InmoContent OS", () => {
         { timeout: 150_000, intervals: [500] },
       )
       .toMatch(/done|partial|error/);
+
+    // Si el trabajo acaba en `error`, la pieza NO se ha regenerado y la
+    // comparacion de bytes de abajo falla con "esperaba false, recibi true":
+    // un mensaje que acusa al codigo de no regenerar cuando lo que paso es que
+    // el render se cayo. Ocurrio el 2026-08-03 con los dos workers peleandose
+    // por la CPU, y costo una tanda entera averiguar que no habia bug. Se corta
+    // aqui, diciendo el motivo de verdad.
+    expect(estadoFinal, "la regeneracion no debe acabar en error").not.toBe(
+      "error",
+    );
 
     const untouchedDownloadAfter = await downloadArtifactBuffer(
       page,
