@@ -289,10 +289,10 @@ async function queueUnderTest() {
     createPrismaRenderJobRepository: () => memoryRepository().repository,
   }));
 
-  const module = await import("@/lib/bootstrap/create-app");
-  const application = module.getApplication();
+  const appModule = await import("@/lib/bootstrap/create-app");
+  const application = appModule.getApplication();
   return {
     reserveRenderSlot: application.reserveRenderSlot.bind(application),
-    RenderQueueError: module.RenderQueueError,
+    RenderQueueError: appModule.RenderQueueError,
   };
 }
