@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { pageTitle } from "@/lib/branding";
 import { prisma } from "@/lib/prisma";
 import { BrandSettingsForm } from "./BrandSettingsForm";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Marca — InmoContent OS",
+  title: pageTitle("Marca"),
 };
 
 export default async function BrandSettingsPage() {

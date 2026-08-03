@@ -10,10 +10,11 @@
  * en el correo de hace seis meses es un manual que no existe.
  */
 import type { Metadata } from "next";
+import { pageTitle } from "@/lib/branding";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Cómo funciona — InmoContent OS",
+  title: pageTitle("Cómo funciona"),
 };
 
 interface Seccion {

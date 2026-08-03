@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useRef, useState, useTransition } from "react";
+import { APP_NAME } from "@/lib/branding";
 import { createBrandAction, type OnboardingState } from "./actions";
 import { PRESET_FONT_CLASS } from "./preset-fonts";
 
@@ -60,7 +61,7 @@ export function OnboardingWizard({
     <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-6 py-16">
       <header className="mb-8">
         <p className="text-sm font-medium uppercase tracking-widest text-foreground-muted">
-          InmoContent OS
+          {APP_NAME}
         </p>
         <p className="mt-1 text-foreground-muted">
           Configuración inicial. Son tres pasos y se hace una sola vez: a partir

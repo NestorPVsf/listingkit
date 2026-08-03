@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { APP_NAME, pageTitle } from "@/lib/branding";
 import { LoginForm } from "./LoginForm";
 
 export const metadata: Metadata = {
-  title: "Acceso — InmoContent OS",
+  title: pageTitle("Acceso"),
 };
 
 /**
@@ -14,7 +15,7 @@ export default function LoginPage() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-6 py-16">
       <p className="mb-2 text-sm font-medium tracking-wide text-foreground-muted">
-        InmoContent OS
+        {APP_NAME}
       </p>
       <h1 className="mb-8 font-display text-3xl font-semibold text-foreground">
         Acceso

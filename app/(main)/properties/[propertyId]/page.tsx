@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageTitle } from "@/lib/branding";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { PropertyDetail } from "./PropertyDetail";
@@ -6,7 +7,7 @@ import { PropertyDetail } from "./PropertyDetail";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Propiedad — InmoContent OS",
+  title: pageTitle("Propiedad"),
 };
 
 interface PropertyPageProps {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { APP_NAME } from "@/lib/branding";
 import { Fraunces, Inter } from "next/font/google";
 import "../globals.css";
 import { AppNav } from "./AppNav";
@@ -19,8 +20,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "InmoContent OS",
-  description: "Generador de piezas de marketing inmobiliario",
+  title: APP_NAME,
+  description: "Una ficha de propiedad, seis piezas de marketing con tu marca.",
 };
 
 export default function MainLayout({

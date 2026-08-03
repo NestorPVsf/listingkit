@@ -8,6 +8,7 @@
 "use client";
 
 import Link from "next/link";
+import { APP_NAME } from "@/lib/branding";
 import { usePathname } from "next/navigation";
 
 const ENLACES = [
@@ -33,7 +34,7 @@ export function AppNav() {
           href="/dashboard"
           className="font-display text-lg font-semibold tracking-tight text-foreground"
         >
-          InmoContent
+          {APP_NAME}
         </Link>
         <nav aria-label="Principal" className="flex flex-1 items-center gap-1">
           {ENLACES.map((enlace) => {

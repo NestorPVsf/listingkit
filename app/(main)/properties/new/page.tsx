@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
+import { APP_NAME, pageTitle } from "@/lib/branding";
 import { PropertyForm } from "./PropertyForm";
 
 export const metadata: Metadata = {
-  title: "Nueva propiedad — InmoContent OS",
+  title: pageTitle("Nueva propiedad"),
 };
 
 export default function NewPropertyPage() {
@@ -10,7 +11,7 @@ export default function NewPropertyPage() {
     <main className="mx-auto w-full max-w-3xl px-6 py-16">
       <header className="mb-10">
         <p className="mb-2 text-sm font-medium uppercase tracking-widest text-foreground-muted">
-          InmoContent OS
+          {APP_NAME}
         </p>
         <h1 className="font-display text-4xl font-semibold text-foreground">
           Nueva propiedad
