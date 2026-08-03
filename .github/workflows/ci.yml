@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # SQLite embebido (better-sqlite3) + adapter de Prisma: el cliente se
+      # genera a partir del schema antes de poder importarlo desde test/build.
+      - run: npx prisma generate
+
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+
+      # Los E2E (`npm run test:e2e`, Playwright) se dejan fuera a propósito:
+      # levantan dos servidores reales (`next dev` y `next build && next
+      # start`) contra sus propias bases SQLite y necesitan
+      # `npx playwright install --with-deps chromium` (~300 MB de navegador),
+      # lo que dispara el tiempo de CI sin aportar señal extra sobre un
+      # push normal. Córrelos a mano con `npm run test:e2e` antes de un
+      # release, o abrir un job aparte con cache de navegadores si hace
+      # falta automatizarlo. Ver README (sección "Comprobaciones").

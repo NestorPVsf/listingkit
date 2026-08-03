@@ -1,5 +1,8 @@
 # ListingKit
 
+[![CI](https://github.com/NestorPVsf/listingkit/actions/workflows/ci.yml/badge.svg)](https://github.com/NestorPVsf/listingkit/actions/workflows/ci.yml)
+[![Licencia MIT](https://img.shields.io/badge/licencia-MIT-blue.svg)](LICENSE)
+
 Una ficha de propiedad entra. Salen seis piezas de marketing con la marca de la
 agencia: ficha técnica en PDF, post de Instagram, carrusel, story, email
 comercial y vídeo vertical.
@@ -55,6 +58,9 @@ nuevo no toca `lib/`; hay una plantilla de PRP en `.specs/templates/`.
 
 ## Poner en marcha
 
+Requisito único: Node 22 o superior. Nada de cuentas, claves ni servicios de
+terceros para tenerlo funcionando en local.
+
 ```bash
 npm install
 npx prisma migrate deploy
@@ -66,7 +72,27 @@ Copia `.env.example` a `.env` y ajústalo. En producción hacen falta además HT
 y `APP_PASSWORD_HASH` (`npm run set-password`): sin contraseña la aplicación
 responde con un error a todo, a propósito.
 
-El nombre visible se cambia por instalación con `NEXT_PUBLIC_APP_NAME`.
+El nombre visible se cambia por instalación con `NEXT_PUBLIC_APP_NAME`. La
+reescritura de texto con IA es **opcional y viene apagada por defecto**: sin
+`AI_TEXT_ENABLED=1` en el `.env` no se llama a ningún servicio externo y el
+botón ni siquiera aparece — ver `.env.example` para activarla con tu propio
+proveedor y clave.
+
+## Qué NO hace / límites
+
+- **No publica por ti.** Genera las seis piezas y te las entrega; subirlas a
+  Instagram, al portal o al CRM sigue siendo cosa tuya.
+- **No inventa datos.** Si un campo no está en la ficha, no sale en la pieza —
+  ni la reescritura con IA (cuando está activada) puede introducir un número
+  que no venga de la ficha o del texto original.
+- **Una instalación = una agencia = una contraseña.** No hay gestión de
+  usuarios, roles ni multi-inquilino: eso es otro producto.
+- **Los artefactos viven en disco local.** Con una sola instancia funciona sin
+  más; con varias hace falta almacenamiento compartido (`output/`) porque una
+  instancia no sirve lo que escribió otra.
+- **Cuotas por fichero, no acumuladas.** Un uso normal no lo nota; un abuso
+  deliberado, sí.
+- Lista completa, con nombre y apellidos, en `AUDIT.md` §6 ("Lo que NO hace").
 
 ## Comprobaciones
 
@@ -85,3 +111,17 @@ propias bases de datos: pasar los tests no toca tus datos.
 Instalable en una agencia detrás de HTTPS. Lo que falta, con nombre y apellidos,
 está en `AUDIT.md` §6 — incluida la sección «lo que no hace», que es la que evita
 la conversación incómoda a los tres meses.
+
+`AUDIT.md` es la auditoría de seguridad del propio proyecto: revisor por ejes ×3 en
+paralelo + revisión adversarial cross-model con Codex sobre el producto real,
+no una checklist genérica. Documenta vulnerabilidades que existieron —fotos
+que filtraban GPS por EXIF sin recodificar, un logo SVG que permitía XSS
+persistente same-origin, entre otras 14— y cómo se cerró cada una, con test de
+regresión (`tests/security/`). Se deja en el repo a propósito: demuestra
+proceso, no solo lo afirma.
+
+## Contacto
+
+Esto es un proyecto personal, abierto bajo MIT para que lo cojas y lo adaptes
+sin pedir permiso. Si quieres esto mismo montado para tu agencia, con tu
+marca y tus flujos, o cualquier otra cosa a medida: **info@podervsfuerza.com**
