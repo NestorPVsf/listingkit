@@ -23,3 +23,12 @@ export const E2E_DEV_BASE_URL = `http://localhost:${E2E_DEV_PORT}`;
 /** Rutas relativas: Prisma las resuelve desde la raiz del proyecto. */
 export const E2E_DEV_DATABASE_URL = "file:./prisma/test-dev.db";
 export const E2E_PROD_DATABASE_URL = "file:./prisma/test-prod.db";
+
+/**
+ * Y el almacen de artefactos, por la misma razon. Separar las bases de datos y
+ * no esto dejaba el problema a medias: los servidores de test escribian en el
+ * MISMO `output/` que el usuario. Se acumularon 705 MB y 108 directorios de
+ * propiedades con solo 3 en la base de datos.
+ */
+export const E2E_DEV_OUTPUT_DIR = "output-test-dev";
+export const E2E_PROD_OUTPUT_DIR = "output-test-prod";

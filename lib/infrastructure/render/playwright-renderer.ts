@@ -20,6 +20,7 @@ import type {
   RenderSession,
 } from "@/lib/engine/ports/renderer";
 import { mintPreviewToken } from "@/lib/render-access/preview-token";
+import { outputPath } from "@/lib/infrastructure/storage/output-paths";
 
 export interface PreviewCaptureTarget {
   readonly previewId: string;
@@ -91,15 +92,6 @@ function safeSegment(value: string): string {
   return value;
 }
 
-function outputPath(...segments: readonly string[]): string {
-  const root = path.resolve(process.cwd(), "output");
-  const candidate = path.resolve(root, ...segments);
-  const relative = path.relative(root, candidate);
-  if (relative.startsWith("..") || path.isAbsolute(relative)) {
-    throw new Error("OUTPUT_PATH_OUTSIDE_ROOT");
-  }
-  return candidate;
-}
 
 async function waitUntilReady(page: Page): Promise<void> {
   await page.waitForSelector("[data-piece-canvas]", { state: "visible" });

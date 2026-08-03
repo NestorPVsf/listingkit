@@ -3,6 +3,7 @@ import { createEngine, type Engine } from "@/lib/engine/create-engine";
 import { createPrismaArtifactRegistry } from "@/lib/infrastructure/db/artifact-registry.prisma";
 import { createPrismaRenderJobRepository } from "@/lib/infrastructure/db/render-job-repository.prisma";
 import { createPrismaRenderLock } from "@/lib/infrastructure/db/render-lock.prisma";
+import { pruneEntityArtifacts } from "@/lib/infrastructure/storage/prune-artifacts";
 import { createJszipPackageBuilder } from "@/lib/infrastructure/package/jszip-package-builder";
 import { createCompositeRenderer } from "@/lib/infrastructure/render/composite-renderer";
 import { createEmailRenderer } from "@/lib/infrastructure/render/email-renderer";
@@ -202,6 +203,7 @@ async function resolveBrandBindings(
 
 function createApplication(): Application {
   const jobs = createPrismaRenderJobRepository();
+  const artifactRegistry = createPrismaArtifactRegistry();
   const baseUrl = process.env.RENDER_BASE_URL ?? "http://localhost:3000";
   const playwrightRenderer = createPlaywrightRenderer({
     baseUrl,
@@ -223,7 +225,7 @@ function createApplication(): Application {
     }),
     packages: createJszipPackageBuilder(
       { inmobiliaria: inmobiliariaPackagePlan },
-      createPrismaArtifactRegistry(),
+      artifactRegistry,
     ),
     locks: createPrismaRenderLock(),
     clock: {
@@ -249,7 +251,17 @@ function createApplication(): Application {
   function enqueue(jobId: string): Promise<RenderJob> {
     const execution = queue.tail
       .catch(() => undefined)
-      .then(() => engine.runRenderJob(jobId));
+      .then(() => engine.runRenderJob(jobId))
+      .then(async (job) => {
+        // Se poda DESPUES de que el trabajo termine y con su propio try: la
+        // limpieza es mantenimiento y no puede tumbar una generacion que acaba
+        // de salir bien. Aqui y no en un cron porque el momento en que sobra
+        // una generacion vieja es exactamente cuando nace la nueva.
+        await pruneEntityArtifacts(job.entityId, artifactRegistry).catch(
+          () => undefined,
+        );
+        return job;
+      });
     queue.tail = execution.then(
       () => undefined,
       () => undefined,

@@ -24,6 +24,8 @@
 # production
 /build
 /output/
+/output-test-dev/
+/output-test-prod/
 /uploads/
 
 # base de datos local (datos de usuario, no va al repo)

@@ -37,6 +37,7 @@ import {
   VIDEO_WIDTH,
 } from "./video/duration-plan";
 import { renderSceneFrame } from "./video/scene-frame";
+import { outputPath } from "@/lib/infrastructure/storage/output-paths";
 
 export const MUSIC_VOLUME_WITH_NARRATION = 0.12;
 export const MUSIC_VOLUME_ALONE = 0.22;
@@ -72,15 +73,6 @@ function safeSegment(value: string): string {
   return value;
 }
 
-function outputPath(...segments: readonly string[]): string {
-  const root = path.resolve(process.cwd(), "output");
-  const candidate = path.resolve(root, ...segments);
-  const relative = path.relative(root, candidate);
-  if (relative.startsWith("..") || path.isAbsolute(relative)) {
-    throw new Error("OUTPUT_PATH_OUTSIDE_ROOT");
-  }
-  return candidate;
-}
 
 function seconds(value: number): string {
   return value.toFixed(3);

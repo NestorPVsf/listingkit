@@ -31,6 +31,7 @@ import { EngineError } from "@/lib/engine/errors";
 import type { PackageBuilder } from "@/lib/engine/ports/package-builder";
 import type { ArtifactRegistry } from "@/lib/engine/ports/artifact-registry";
 import type { NichePackagePlan } from "./niche-package-plan";
+import { outputPath } from "@/lib/infrastructure/storage/output-paths";
 
 const SAFE_SEGMENT = /^[a-zA-Z0-9_-]+$/;
 
@@ -41,15 +42,6 @@ function safeSegment(value: string): string {
   return value;
 }
 
-function outputPath(...segments: readonly string[]): string {
-  const root = path.resolve(process.cwd(), "output");
-  const candidate = path.resolve(root, ...segments);
-  const relative = path.relative(root, candidate);
-  if (relative.startsWith("..") || path.isAbsolute(relative)) {
-    throw new Error("OUTPUT_PATH_OUTSIDE_ROOT");
-  }
-  return candidate;
-}
 
 async function readArtifactBuffer(
   job: Readonly<RenderJob>,

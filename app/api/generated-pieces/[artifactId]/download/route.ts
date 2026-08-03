@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "@/lib/prisma";
+import { outputRoot } from "@/lib/infrastructure/storage/output-paths";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -61,9 +62,11 @@ export async function GET(
     return Response.json({ error: "ARTIFACT_NOT_FOUND" }, { status: 404 });
   }
 
-  const outputRoot = path.resolve(process.cwd(), "output");
   const absolutePath = path.resolve(process.cwd(), artifact.path);
-  const relative = path.relative(outputRoot, absolutePath);
+  // La raiz sale del modulo comun, no escrita a mano: era la QUINTA copia de
+  // esta comprobacion y la unica que no se actualizo al hacerla configurable,
+  // asi que en los tests toda descarga daba 404.
+  const relative = path.relative(outputRoot(), absolutePath);
   if (relative.startsWith("..") || path.isAbsolute(relative)) {
     return Response.json({ error: "ARTIFACT_PATH_INVALID" }, { status: 404 });
   }

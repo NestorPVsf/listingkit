@@ -9,8 +9,10 @@ import {
 import {
   E2E_DEV_BASE_URL,
   E2E_DEV_DATABASE_URL,
+  E2E_DEV_OUTPUT_DIR,
   E2E_DEV_PORT,
   E2E_PROD_DATABASE_URL,
+  E2E_PROD_OUTPUT_DIR,
 } from "./tests/e2e/test-db";
 
 /**
@@ -84,6 +86,7 @@ export default defineConfig({
         // capturar las piezas: o no hay nada escuchando, o —peor— esta el
         // servidor del usuario y las capturas saldrian de SU base de datos.
         RENDER_BASE_URL: E2E_DEV_BASE_URL,
+        RENDER_OUTPUT_DIR: E2E_DEV_OUTPUT_DIR,
       },
     },
     {
@@ -102,6 +105,7 @@ export default defineConfig({
         // obligatorio, y sin el la app responde 503 a todo.
         APP_PASSWORD_HASH: hashPassword(PROD_OPERATOR_PASSWORD),
         DATABASE_URL: E2E_PROD_DATABASE_URL,
+        RENDER_OUTPUT_DIR: E2E_PROD_OUTPUT_DIR,
       },
     },
   ],

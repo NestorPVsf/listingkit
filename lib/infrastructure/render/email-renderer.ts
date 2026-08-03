@@ -17,6 +17,7 @@ import path from "node:path";
 import type { RenderArtifact, RenderJob, RenderTask } from "@/lib/engine/contracts";
 import { EngineError } from "@/lib/engine/errors";
 import type { RendererPort, RenderSession } from "@/lib/engine/ports/renderer";
+import { outputPath } from "@/lib/infrastructure/storage/output-paths";
 
 /** Lo que el nicho devuelve ya renderizado. */
 export interface EmailContent {
@@ -55,15 +56,6 @@ function safeSegment(value: string): string {
   return value;
 }
 
-function outputPath(...segments: readonly string[]): string {
-  const root = path.resolve(process.cwd(), "output");
-  const candidate = path.resolve(root, ...segments);
-  const relative = path.relative(root, candidate);
-  if (relative.startsWith("..") || path.isAbsolute(relative)) {
-    throw new Error("OUTPUT_PATH_OUTSIDE_ROOT");
-  }
-  return candidate;
-}
 
 async function writeArtifact(
   entitySegment: string,
