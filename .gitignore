@@ -56,3 +56,6 @@ next-env.d.ts
 
 # locks de herramientas locales (llevan el PID de la sesion, no son versionables)
 /.claude/scheduled_tasks.lock
+
+# salida de graphify (grafo de conocimiento local, no versionable)
+/graphify-out/

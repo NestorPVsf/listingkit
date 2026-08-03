@@ -41,9 +41,18 @@ function archivo(bytes: Buffer, nombre = "narracion.wav", tipo = "audio/wav"): F
   return new File([new Uint8Array(bytes)], nombre, { type: tipo });
 }
 
-/** Nombres de archivo presentes ahora mismo, para detectar restos. */
+/**
+ * Restos que una subida de audio podría dejar: el `.m4a` y los temporales que
+ * escribe antes de renombrar. Se filtra por extensión a propósito — este
+ * directorio es el `uploads/assets` de verdad y hay otro fichero de tests
+ * (`image-metadata-strip`) escribiendo sus `.jpg` ahí a la vez. Mirar el
+ * directorio entero hacía que este test fallara cuando el otro iba rápido: el
+ * test acusaba al almacén de dejar basura que había puesto un vecino.
+ */
 const enDisco = async (): Promise<readonly string[]> =>
-  await readdir(DIRECTORIO).catch(() => []);
+  (await readdir(DIRECTORIO).catch(() => [])).filter(
+    (n) => n.endsWith(AUDIO_OUTPUT_EXTENSION) || n.endsWith(".tmp"),
+  );
 
 afterAll(async () => {
   await Promise.all(
