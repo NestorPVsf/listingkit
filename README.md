@@ -58,25 +58,50 @@ nuevo no toca `lib/`; hay una plantilla de PRP en `.specs/templates/`.
 
 ## Poner en marcha
 
-Requisito único: Node 22 o superior. Nada de cuentas, claves ni servicios de
-terceros para tenerlo funcionando en local.
+**Ninguna cuenta, clave ni servicio de terceros** para tenerlo funcionando en
+local. Hacen falta dos cosas en la máquina, y conviene comprobarlas antes de
+empezar porque si faltan el fallo aparece tarde y mal:
+
+| Requisito | Para qué | Comprobar |
+|---|---|---|
+| **Node 22 o superior** | todo | `node -v` |
+| **FFmpeg** en el `PATH` | el vídeo vertical y la recompresión de los audios | `ffmpeg -version` · `ffprobe -version` |
+
+FFmpeg no se instala con `npm`. En Windows `winget install Gyan.FFmpeg`, en macOS
+`brew install ffmpeg`, en Debian o Ubuntu `sudo apt install ffmpeg`. Sin él las
+otras cinco piezas se generan igual: solo falla el vídeo, y con un mensaje que
+dice exactamente eso.
 
 ```bash
 npm install
-npx prisma migrate deploy
-npm run db:seed     # marca y 3 propiedades de demostración con fotos reales
-npm run dev
+npx playwright install chromium   # el navegador que renderiza PDF e imágenes
+npx prisma generate               # cliente tipado a partir del schema
+npx prisma migrate deploy         # crea prisma/dev.db
+npm run db:seed                   # marca y 3 propiedades de demo con fotos reales
+cp .env.example .env
+npm run dev                       # http://localhost:3000
 ```
 
-Copia `.env.example` a `.env` y ajústalo. En producción hacen falta además HTTPS
-y `APP_PASSWORD_HASH` (`npm run set-password`): sin contraseña la aplicación
-responde con un error a todo, a propósito.
+En **desarrollo** eso es todo: no hay contraseña y se entra directo al panel.
+
+Para **producción** hacen falta dos cosas más, y sin ellas la aplicación se
+niega a funcionar a propósito:
+
+```bash
+npm run set-password              # imprime la línea APP_PASSWORD_HASH para el .env
+npm run build && npm start
+```
+
+- **`APP_PASSWORD_HASH`**: sin él responde 503 a todo. Es deliberado — una
+  instalación sin candado en una red es peor que una que no arranca.
+- **HTTPS**: la cookie de sesión va marcada `Secure`, así que sobre HTTP el
+  navegador no la guarda y no hay manera de entrar. Ponlo detrás de un proxy
+  con TLS.
 
 El nombre visible se cambia por instalación con `NEXT_PUBLIC_APP_NAME`. La
-reescritura de texto con IA es **opcional y viene apagada por defecto**: sin
-`AI_TEXT_ENABLED=1` en el `.env` no se llama a ningún servicio externo y el
-botón ni siquiera aparece — ver `.env.example` para activarla con tu propio
-proveedor y clave.
+reescritura de texto con IA es **opcional y viene apagada**: sin
+`AI_TEXT_ENABLED=1` no se llama a ningún servicio externo y el botón ni siquiera
+aparece — `.env.example` explica cómo activarla con tu proveedor y tu clave.
 
 ## Qué NO hace / límites
 
@@ -97,9 +122,12 @@ proveedor y clave.
 ## Comprobaciones
 
 ```bash
-npm test            # 372 unitarios
+npm test            # 401 unitarios
 npm run test:e2e    # 27 end-to-end (desarrollo + build de producción real)
 ```
+
+Los E2E no corren en CI a propósito: levantan dos servidores reales y descargan
+un navegador completo. Pásalos a mano antes de tocar nada que se publique.
 
 Los E2E corren contra dos servidores: uno de desarrollo y un `next build && next
 start` de verdad. Existe porque los dos fallos más caros del proyecto pasaron con
@@ -112,9 +140,10 @@ Instalable en una agencia detrás de HTTPS. Lo que falta, con nombre y apellidos
 está en `AUDIT.md` §6 — incluida la sección «lo que no hace», que es la que evita
 la conversación incómoda a los tres meses.
 
-`AUDIT.md` es la auditoría de seguridad del propio proyecto: revisor por ejes ×3 en
-paralelo + revisión adversarial cross-model con Codex sobre el producto real,
-no una checklist genérica. Documenta vulnerabilidades que existieron —fotos
+`AUDIT.md` es la auditoría de seguridad del propio proyecto: tres revisiones en
+paralelo por ejes distintos, más una pasada adversarial con un modelo diferente
+del que escribió el código, sobre el producto real y no sobre una checklist
+genérica. Documenta vulnerabilidades que existieron —fotos
 que filtraban GPS por EXIF sin recodificar, un logo SVG que permitía XSS
 persistente same-origin, entre otras 14— y cómo se cerró cada una, con test de
 regresión (`tests/security/`). Se deja en el repo a propósito: demuestra

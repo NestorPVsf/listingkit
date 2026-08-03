@@ -11,8 +11,11 @@ import JSZip from "jszip";
 import { extractText } from "unpdf";
 
 const execFileAsync = promisify(execFile);
-const FFPROBE =
-  "ffprobe";
+// Se toma del PATH, como hace la aplicacion. Aqui hubo durante meses una ruta
+// absoluta al ffprobe de una maquina concreta: el script solo funcionaba en
+// ese ordenador. Con `FFPROBE` se puede apuntar a una instalacion que no este
+// en el PATH.
+const FFPROBE = process.env.FFPROBE ?? "ffprobe";
 
 const OUT_ROOT = path.resolve(process.cwd(), "output/demo");
 

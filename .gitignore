@@ -54,5 +54,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# runtime de Claude Code (lock con PID de sesion, no versionable)
+# locks de herramientas locales (llevan el PID de la sesion, no son versionables)
 /.claude/scheduled_tasks.lock

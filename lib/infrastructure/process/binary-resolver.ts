@@ -9,10 +9,23 @@ export interface FfmpegTools {
 const WHERE_TIMEOUT_MS = 5_000;
 let ffmpegToolsPromise: Promise<FfmpegTools> | undefined;
 
+/**
+ * Cada sistema tiene el suyo y no son intercambiables: `where.exe` no existe
+ * fuera de Windows y `which` no existe en un Windows limpio. Se resuelve por
+ * plataforma en vez de asumir una — durante meses aqui habia un `where.exe`
+ * fijo, y con el la generacion de video no arrancaba en Linux ni en macOS.
+ */
+function localizador(): readonly [string, (binario: string) => string[]] {
+  return process.platform === "win32"
+    ? ["where.exe", (binario) => [binario]]
+    : ["/usr/bin/env", (binario) => ["which", binario]];
+}
+
 async function resolveWithWhere(binaryName: string): Promise<string> {
+  const [comando, argumentos] = localizador();
   const result = await spawnWithTimeout(
-    "where.exe",
-    [binaryName],
+    comando,
+    argumentos(binaryName),
     WHERE_TIMEOUT_MS,
   );
   const candidate = result.stdout

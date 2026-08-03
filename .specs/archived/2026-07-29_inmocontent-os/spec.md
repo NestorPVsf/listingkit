@@ -49,7 +49,7 @@ Labels asociados, navegación por teclado, contraste suficiente, alt texts, focu
 El motor es **genérico por nicho**: `NicheConfig` define schema de entrada, mapeo campos→variables de plantilla y catálogo de piezas. "Inmobiliaria" es la primera instancia; el core (entrada → plantillas → render → paquete) no conoce el vertical. Contrato: `EntityInput → TemplateBindings → RenderJob → Package`. Detalle: `docs/architecture/niche-engine.md`.
 
 ## Fuera de alcance v1
-Publicación directa a redes · multi-tenant/auth multi-agencia · IA de texto activada por defecto · traducción automática y checklist legal ampliado (candidatas v1.1, ver `docs/research/oportunidades-producto.md`) · segunda vertical completa (solo PoC).
+Publicación directa a redes · multi-tenant/auth multi-agencia · IA de texto activada por defecto · traducción automática y checklist legal ampliado (candidatas v1.1) · segunda vertical completa (solo PoC).
 
 ## Criterios de finalización
 App arranca localmente · formulario funciona · datos persisten · previews visibles · 6 piezas se generan · ZIP descargable · tests verdes (unit+E2E+security) · build sin errores · README con comandos exactos · lista clara de limitaciones.

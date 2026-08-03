@@ -21,9 +21,15 @@ Un operador de inmobiliaria rellena **un formulario de propiedad** (~35 campos) 
 | Email comercial | HTML ≤600px + `.txt` | Plantilla server-side |
 | Vídeo vertical | MP4 1080×1920, 20-35 s | FFmpeg (`spawn` directo) |
 
-**Sin IA generativa para los textos**: plantillas locales deterministas con lista negra de
-frases prohibidas. La misma entrada produce la misma salida, y ninguna frase legalmente
-comprometida se cuela porque un modelo tuvo un mal día.
+**El texto sale de plantillas locales deterministas**, con lista negra de frases prohibidas.
+La misma entrada produce la misma salida, y ninguna frase legalmente comprometida se cuela
+porque un modelo tuvo un mal día. Es el camino principal y el único encendido de fábrica.
+
+**La reescritura con IA es opcional y viene apagada** (`AI_TEXT_ENABLED`). Cuando se
+enciende, *reescribe* un texto que ya existe: no genera desde cero, no puede introducir
+ningún número que no venga de la ficha o del texto original —se comprueba después, y si lo
+intenta se descarta la respuesta entera—, y pasa por el mismo guardarraíl de privacidad que
+el editor manual. Detalle en §4.
 
 **Sin publicación automática** en redes: v1 entrega ficheros. Publicar es una decisión
 del cliente, no del sistema.
@@ -83,10 +89,10 @@ vacío es un problema de seguridad física para el cliente), así que tiene **cu
 
 Dos pasadas independientes sobre el código terminado:
 
-- **`revisor por ejes` ×3 en paralelo** (seguridad / calidad / corrección, mismo modelo):
+- **Tres revisiones en paralelo, una por eje** (seguridad / calidad / corrección):
   1 crítico + 8 importantes.
-- **Revisión adversarial con un modelo distinto** (modelo distinto, prompt de atacante):
-  14 hallazgos. Informe íntegro en [`docs/review/adversarial-review.md`](docs/review/adversarial-review.md).
+- **Revisión adversarial con un modelo distinto**, bajo prompt de atacante: 14 hallazgos.
+  Informe íntegro en [`docs/review/adversarial-review.md`](docs/review/adversarial-review.md).
 
 ### Corregido
 
@@ -106,8 +112,8 @@ Dos pasadas independientes sobre el código terminado:
 
 ### Tercera pasada: revisión cross-model del control de acceso
 
-El token de render (F-14) se auditó aparte con un modelo distinto, porque un
-control de acceso escrito por el mismo modelo que lo diseñó no es una segunda
+El token de render (F-14) se auditó aparte, y con un modelo distinto del que lo
+escribió: un control de acceso revisado por quien lo diseñó no es una segunda
 opinión. Veredicto del núcleo criptográfico: correcto — HMAC-SHA256 bien
 construido, alcance cubierto, `timingSafeEqual`, sin length-extension aplicable,
 verificación antes de tocar Prisma. **Sin hallazgos críticos ni altos.**
@@ -300,7 +306,7 @@ La guía original describía el flujo y las 6 piezas. Estado punto por punto:
 | Descarga individual + ZIP | ✅ Más `README.txt` y `datos-propiedad.json` |
 | Regenerar una sola pieza | ✅ Sin tocar las demás |
 | Editar el texto antes de regenerar | ✅ Con el guardarraíl de privacidad añadido |
-| Textos sin IA | ✅ Plantillas deterministas + lista negra |
+| Textos sin depender de un modelo | ✅ Plantillas deterministas + lista negra. La reescritura con IA es opcional, va apagada y no puede inventar cifras |
 | Replicable a otros nichos | ✅ Demostrado con el PoC dental (parcial: hasta la planificación) |
 
 **Añadido sobre la guía** (del research de mercado en `docs/research/`): reglas legales como

@@ -11,7 +11,7 @@
  * Este archivo fallará en rojo por import inexistente hasta que `database`
  * implemente `niches/inmobiliaria/public-view.ts` en la tarea 2.4.
  *
- * DECISIÓN DE DISEÑO (pendiente de confirmar): se asume que `Property`
+ * DECISIÓN DE DISEÑO: se asume que `Property`
  * (persistida) extiende `PropertyInput` con `id`, `createdAt`, `updatedAt`.
  * Si el agente `database` modela `Property` distinto, solo hace falta ajustar
  * el tipo del fixture — los asserts de fuga de datos no cambian.

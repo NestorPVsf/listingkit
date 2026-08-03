@@ -8,7 +8,7 @@
 |---|---|---|
 | Node | v24.11.1 | OK — cumple el mínimo de Next 16 (`^18.18 \|\| >=20`) y de Prisma 7 (`^20.19 \|\| ^22.12 \|\| >=24.0`) |
 | npm | 11.6.2 | OK |
-| OS | Windows 11 nativo | Proyecto se mantiene 100% Windows-native, sin WSL (regla aprendida `node-modules-por-plataforma-wsl-windows`) |
+| OS | Windows 11 nativo | El desarrollo se mantiene 100% Windows-native, sin WSL: los binarios nativos son por plataforma y el arbol de `node_modules` se rompe al alternar |
 | FFmpeg | **Instalado** — `ffmpeg version 8.0.1-full_build` (Gyan.FFmpeg via winget) | OK. Dos instalaciones detectadas vía winget (`Gyan.FFmpeg` y `yt-dlp.FFmpeg`), ambas en PATH. No requiere acción. |
 
 ## Scaffold creado
@@ -23,8 +23,8 @@
 |---|---|---|---|
 | `prisma` + `@prisma/client` | 7.9.1 | OK — engines exige `^20.19 \|\| ^22.12 \|\| >=24.0`, Node 24 cumple | SQLite como datasource sigue soportado en Prisma 7 |
 | `zod` | 4.4.3 | OK | Zod 4 tiene cambios de API respecto a v3 (import paths, `.parse` performance) — usar la doc v4 al implementar, no asumir sintaxis v3 |
-| `sharp` | 0.35.3 | OK | Binarios prebuilt para Windows x64 — sin toolchain nativo necesario. Coherente con regla aprendida `node-modules-por-plataforma-wsl-windows`: instalar SIEMPRE desde Windows nativo, nunca reusar `node_modules` generado en WSL |
-| `playwright` / `@playwright/test` | 1.62.0 | OK | Usar para render/verificación PDF (regla aprendida `pdf-render-verify-pymupdf` adaptado) y ruta preview dev-only |
+| `sharp` | 0.35.3 | OK | Binarios prebuilt para Windows x64 — sin toolchain nativo necesario. Instalar SIEMPRE desde el mismo sistema en el que se ejecuta: nunca reusar un `node_modules` generado en otra plataforma |
+| `playwright` / `@playwright/test` | 1.62.0 | OK | Usar para render y verificación real del PDF (abrirlo y mirarlo, no solo comprobar que el build pasa) y para la ruta de preview |
 | `jszip` | 3.10.1 | OK | Sin cambios relevantes, estable desde hace años, mantenido |
 | `vitest` | 4.1.10 | OK | Compatible con Vite 6/7 subyacente; verificar en fase de testing que no colisiona con la config de Next |
 | `react-hook-form` | 7.83.0 | OK | Compatible con React 19 |
@@ -33,7 +33,7 @@
 ## FFmpeg vía child_process — decisión sobre `fluent-ffmpeg`
 
 - `fluent-ffmpeg` (última versión 2.1.3, último publish **2025-05-22**) está efectivamente **sin mantenimiento activo** — el repo lleva años sin cambios sustanciales y es un wrapper fino sobre `child_process.spawn` que no aporta nada que no se pueda hacer directo.
-- **Decisión (confirma la nota del PLAN.md)**: NO usar `fluent-ffmpeg`. Invocar FFmpeg directo vía `child_process.spawn`, resolviendo el binario con `where.exe ffmpeg` (o ruta absoluta) tal como indica el regla aprendida `windows-spawn-cmd-shim-einval` — evita el `EINVAL` de shims `.cmd` en Windows y evita añadir una dependencia para lo que es una llamada de proceso con argumentos de array.
+- **Decisión (confirma la nota del PLAN.md)**: NO usar `fluent-ffmpeg`. Invocar FFmpeg directo vía `child_process.spawn`, resolviendo el binario con `where.exe ffmpeg` (o ruta absoluta) resolviendo el binario antes de invocarlo — evita el `EINVAL` de shims `.cmd` en Windows y evita añadir una dependencia para lo que es una llamada de proceso con argumentos de array.
 - Ponytail: una función `runFfmpeg(args: string[])` de ~15 líneas sobre `child_process.spawn` cubre encode/thumbnail/concat sin dependencia extra.
 
 ## TypeScript — nota sobre major 7.x
