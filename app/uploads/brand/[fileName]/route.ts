@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { brandDir } from "@/lib/infrastructure/storage/upload-paths";
 import { sanitizeFileName } from "@/lib/infrastructure/files/upload-contract";
 
 export const runtime = "nodejs";
@@ -38,7 +39,7 @@ export async function GET(
     return Response.json({ error: "BRAND_ASSET_NOT_FOUND" }, { status: 404 });
   }
 
-  const uploadsDir = path.resolve(process.cwd(), "uploads", "brand");
+  const uploadsDir = brandDir();
   const absolutePath = path.resolve(uploadsDir, validatedFileName);
   const relative = path.relative(uploadsDir, absolutePath);
   if (relative.startsWith("..") || path.isAbsolute(relative)) {

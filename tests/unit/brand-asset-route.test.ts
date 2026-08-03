@@ -6,11 +6,12 @@
  */
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { brandDir } from "@/lib/infrastructure/storage/upload-paths";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { GET } from "@/app/uploads/brand/[fileName]/route";
 
-const UPLOAD_DIR = path.resolve(process.cwd(), "uploads", "brand");
+const UPLOAD_DIR = brandDir();
 const FIXTURE_NAME = `test-${randomUUID()}.png`;
 // PNG 1x1 válido (rojo) — mismo fixture que tests/fixtures/demo-property.ts.
 const PNG_BYTES = Buffer.from(

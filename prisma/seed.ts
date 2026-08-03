@@ -20,13 +20,14 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { storageKeyOf, uploadsRoot } from "@/lib/infrastructure/storage/upload-paths";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "@prisma/client";
 import sharp from "sharp";
 import { propertyInputSchema, type PropertyInput } from "../niches/inmobiliaria/schema.ts";
 import { brandConfigSchema, brandPresetSchema } from "../niches/inmobiliaria/brand.schema.ts";
 
-const UPLOADS_ROOT = path.resolve(process.cwd(), "uploads");
+const UPLOADS_ROOT = uploadsRoot();
 const ASSETS_DIR = path.join(UPLOADS_ROOT, "assets");
 const BRAND_DIR = path.join(UPLOADS_ROOT, "brand");
 /**
@@ -81,7 +82,7 @@ async function seedImageAsset(
   const id = deterministicUuid(seedKey);
   const extension = formato === "jpeg" ? "jpg" : "png";
   const storageFileName = `${id}.${extension}`;
-  const storageKey = path.join("uploads", "assets", storageFileName).replaceAll("\\", "/");
+  const storageKey = storageKeyOf(path.join(ASSETS_DIR, storageFileName));
   const metadata = await sharp(buffer).metadata();
   const record = {
     id,

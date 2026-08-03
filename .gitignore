@@ -27,6 +27,9 @@
 /output-test-dev/
 /output-test-prod/
 /uploads/
+/uploads-test-dev/
+/uploads-test-prod/
+/uploads-test-unit/
 
 # base de datos local (datos de usuario, no va al repo)
 /prisma/dev.db

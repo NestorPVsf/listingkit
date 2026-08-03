@@ -14,6 +14,7 @@ import {
   photoUploadSchema,
   sanitizeFileName,
 } from "@/lib/infrastructure/files/upload-contract";
+import { assetsDir, storageKeyOf } from "@/lib/infrastructure/storage/upload-paths";
 import {
   AUDIO_OUTPUT_EXTENSION,
   AUDIO_OUTPUT_MEDIA_TYPE,
@@ -65,9 +66,7 @@ const MEDIA_BY_FORMAT = {
   webp: { mediaType: "image/webp", extension: ".webp" },
 } as const;
 
-function assetDirectory(): string {
-  return path.resolve(process.cwd(), "uploads", "assets");
-}
+const assetDirectory = assetsDir;
 
 function assertAssetId(assetId: string): string {
   return z.string().uuid().parse(assetId);
@@ -128,9 +127,7 @@ export async function storeImageUpload(file: File): Promise<AssetRef> {
 
   const id = randomUUID();
   const storageFileName = `${id}${actual.extension}`;
-  const storageKey = path
-    .join("uploads", "assets", storageFileName)
-    .replaceAll("\\", "/");
+  const storageKey = storageKeyOf(path.join(assetDirectory(), storageFileName));
   const metadata: StoredImageAsset = {
     id,
     kind: "image",
@@ -233,9 +230,7 @@ export async function storeAudioUpload(
   }
   const id = randomUUID();
   const storageFileName = `${id}${AUDIO_OUTPUT_EXTENSION}`;
-  const storageKey = path
-    .join("uploads", "assets", storageFileName)
-    .replaceAll("\\", "/");
+  const storageKey = storageKeyOf(path.join(assetDirectory(), storageFileName));
   const metadata: StoredAudioAsset = {
     id,
     kind: "audio",

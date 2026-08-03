@@ -2,6 +2,7 @@
 
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { brandDir } from "@/lib/infrastructure/storage/upload-paths";
 import sharp from "sharp";
 import { redirect } from "next/navigation";
 import presetsFile from "@/niches/inmobiliaria/brand-presets.json";
@@ -37,7 +38,10 @@ type LogoExtension = (typeof ALLOWED_LOGO_TYPES)[keyof typeof ALLOWED_LOGO_TYPES
 const MAX_LOGO_BYTES = 5 * 1024 * 1024;
 const MAX_LOGO_DIMENSION = 1600;
 
-const UPLOAD_DIR = path.join(process.cwd(), "uploads", "brand");
+// La ruta publica sigue siendo `/uploads/brand/...` (es una ruta de la app,
+// no del disco), pero el directorio real es configurable: los tests no
+// pueden escribir donde estan los logos del usuario.
+const UPLOAD_DIR = brandDir();
 
 function toSafeSlug(name: string): string {
   const withoutExt = name.replace(/\.[^.]+$/, "");

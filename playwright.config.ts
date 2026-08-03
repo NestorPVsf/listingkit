@@ -11,8 +11,10 @@ import {
   E2E_DEV_DATABASE_URL,
   E2E_DEV_OUTPUT_DIR,
   E2E_DEV_PORT,
+  E2E_DEV_UPLOADS_DIR,
   E2E_PROD_DATABASE_URL,
   E2E_PROD_OUTPUT_DIR,
+  E2E_PROD_UPLOADS_DIR,
 } from "./tests/e2e/test-db";
 
 /**
@@ -21,6 +23,7 @@ import {
  * cargue `lib/prisma.ts` es parte de la separacion, no un detalle.
  */
 process.env.DATABASE_URL = E2E_DEV_DATABASE_URL;
+process.env.UPLOADS_DIR = E2E_DEV_UPLOADS_DIR;
 
 /**
  * Config E2E. Dos proyectos, porque hay dos cosas distintas que comprobar:
@@ -87,6 +90,7 @@ export default defineConfig({
         // servidor del usuario y las capturas saldrian de SU base de datos.
         RENDER_BASE_URL: E2E_DEV_BASE_URL,
         RENDER_OUTPUT_DIR: E2E_DEV_OUTPUT_DIR,
+        UPLOADS_DIR: E2E_DEV_UPLOADS_DIR,
       },
     },
     {
@@ -106,6 +110,7 @@ export default defineConfig({
         APP_PASSWORD_HASH: hashPassword(PROD_OPERATOR_PASSWORD),
         DATABASE_URL: E2E_PROD_DATABASE_URL,
         RENDER_OUTPUT_DIR: E2E_PROD_OUTPUT_DIR,
+        UPLOADS_DIR: E2E_PROD_UPLOADS_DIR,
       },
     },
   ],

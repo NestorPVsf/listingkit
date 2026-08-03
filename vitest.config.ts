@@ -17,6 +17,9 @@ export default defineConfig({
     // 2026-07-31 escribian en `prisma/dev.db` y llegaron a borrar la marca de
     // la demo del usuario. Ver tests/setup/unit-db.ts.
     globalSetup: ["./tests/setup/unit-db.ts"],
-    env: { DATABASE_URL: UNIT_DATABASE_URL },
+    // Y su propio `uploads/`: hasta el 2026-08-03 los tests escribian fotos y
+    // audios en el directorio del usuario. Dos ficheros de test llegaron a
+    // pisarse entre si ahi dentro.
+    env: { DATABASE_URL: UNIT_DATABASE_URL, UPLOADS_DIR: "uploads-test-unit" },
   },
 });

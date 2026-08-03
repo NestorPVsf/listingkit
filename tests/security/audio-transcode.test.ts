@@ -23,6 +23,7 @@ import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import { createHash } from "node:crypto";
 import { readdir, readFile, rm } from "node:fs/promises";
 import path from "node:path";
+import { assetsDir } from "@/lib/infrastructure/storage/upload-paths";
 import {
   AUDIO_MAX_SECONDS,
   AUDIO_OUTPUT_EXTENSION,
@@ -34,7 +35,7 @@ import { storeAudioUpload } from "@/lib/infrastructure/files/local-asset-store";
 const CRUDO = Buffer.from("ORIGINAL-CRUDO-QUE-NO-DEBE-PERSISTIRSE".repeat(64));
 const RECODIFICADO = Buffer.from("m4a-recodificado");
 
-const DIRECTORIO = path.resolve(process.cwd(), "uploads", "assets");
+const DIRECTORIO = assetsDir();
 const guardados: string[] = [];
 
 function archivo(bytes: Buffer, nombre = "narracion.wav", tipo = "audio/wav"): File {
@@ -42,17 +43,13 @@ function archivo(bytes: Buffer, nombre = "narracion.wav", tipo = "audio/wav"): F
 }
 
 /**
- * Restos que una subida de audio podría dejar: el `.m4a` y los temporales que
- * escribe antes de renombrar. Se filtra por extensión a propósito — este
- * directorio es el `uploads/assets` de verdad y hay otro fichero de tests
- * (`image-metadata-strip`) escribiendo sus `.jpg` ahí a la vez. Mirar el
- * directorio entero hacía que este test fallara cuando el otro iba rápido: el
- * test acusaba al almacén de dejar basura que había puesto un vecino.
+ * Todo lo que hay ahora mismo en el directorio de assets. Vuelve a ser una
+ * afirmación fuerte —«no queda NADA nuevo»— porque desde que `UPLOADS_DIR` es
+ * configurable esto ya no es el directorio del usuario compartido con otros
+ * ficheros de test: filtrar por extensión dejaba pasar un `.json` huérfano.
  */
 const enDisco = async (): Promise<readonly string[]> =>
-  (await readdir(DIRECTORIO).catch(() => [])).filter(
-    (n) => n.endsWith(AUDIO_OUTPUT_EXTENSION) || n.endsWith(".tmp"),
-  );
+  await readdir(DIRECTORIO).catch(() => []);
 
 afterAll(async () => {
   await Promise.all(

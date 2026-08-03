@@ -8,6 +8,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { rm } from "node:fs/promises";
 import path from "node:path";
+import { assetsDir } from "@/lib/infrastructure/storage/upload-paths";
 import sharp from "sharp";
 import {
   readStoredAsset,
@@ -51,10 +52,10 @@ function asFile(bytes: Buffer, name: string, type: string): File {
 afterAll(async () => {
   await Promise.all(
     storedIds.flatMap((id) => [
-      rm(path.resolve(process.cwd(), "uploads", "assets", `${id}.jpg`), {
+      rm(path.join(assetsDir(), `${id}.jpg`), {
         force: true,
       }),
-      rm(path.resolve(process.cwd(), "uploads", "assets", `${id}.json`), {
+      rm(path.join(assetsDir(), `${id}.json`), {
         force: true,
       }),
     ]),

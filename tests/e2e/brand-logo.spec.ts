@@ -12,6 +12,7 @@
 import { randomUUID } from "node:crypto";
 import { copyFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
+import { brandDir } from "@/lib/infrastructure/storage/upload-paths";
 import { expect, test } from "@playwright/test";
 import { prisma } from "@/lib/prisma";
 import {
@@ -26,7 +27,7 @@ import {
   triggerGenerate,
 } from "./helpers";
 
-const UPLOAD_DIR = path.resolve(process.cwd(), "uploads", "brand");
+const UPLOAD_DIR = brandDir();
 const LOGO_FIXTURE = path.resolve(process.cwd(), "scripts/qa-visual/logo.png");
 
 test.describe("Render con logo de marca real", () => {

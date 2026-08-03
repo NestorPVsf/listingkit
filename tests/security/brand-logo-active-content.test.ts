@@ -13,11 +13,12 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { readFile, rm } from "node:fs/promises";
 import path from "node:path";
+import { brandDir } from "@/lib/infrastructure/storage/upload-paths";
 import sharp from "sharp";
 import { storeBrandLogo } from "@/app/(main)/(setup)/onboarding/actions";
 import { brandConfigSchema } from "@/niches/inmobiliaria/brand.schema";
 
-const UPLOAD_DIR = path.resolve(process.cwd(), "uploads", "brand");
+const UPLOAD_DIR = brandDir();
 const written: string[] = [];
 
 const MALICIOUS_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">

@@ -1,5 +1,6 @@
 import { access } from "node:fs/promises";
 import path from "node:path";
+import { uploadPath } from "@/lib/infrastructure/storage/upload-paths";
 import type {
   VideoScene,
   VideoStoryboard,
@@ -41,14 +42,17 @@ function findDefaultPreset(): BrandPreset {
 }
 
 async function resolvePhotoPath(fileName: string): Promise<string> {
-  const root = path.resolve(process.cwd(), "uploads", "assets");
-  const candidate = path.resolve(root, fileName);
-  const relative = path.relative(root, candidate);
-  if (
-    path.basename(fileName) !== fileName ||
-    relative.startsWith("..") ||
-    path.isAbsolute(relative)
-  ) {
+  // Solo un nombre de fichero, nunca una ruta: la comprobacion se queda aunque
+  // `uploadPath` ya rechace lo que se salga de la raiz. Son dos preguntas
+  // distintas —"esto es un nombre" y "esto cae dentro"— y la segunda no
+  // sustituye a la primera.
+  if (path.basename(fileName) !== fileName) {
+    throw new Error("PHOTO_PATH_OUTSIDE_STORAGE");
+  }
+  let candidate: string;
+  try {
+    candidate = uploadPath("assets", fileName);
+  } catch {
     throw new Error("PHOTO_PATH_OUTSIDE_STORAGE");
   }
   await access(candidate);
@@ -61,10 +65,19 @@ async function resolveLogoPath(
   if (!logoUrl) {
     return undefined;
   }
-  const root = path.resolve(process.cwd(), "uploads", "brand");
-  const candidate = path.resolve(process.cwd(), logoUrl.replace(/^\/+/, ""));
-  const relative = path.relative(root, candidate);
-  if (relative.startsWith("..") || path.isAbsolute(relative)) {
+  // `logoUrl` es una URL PUBLICA (`/uploads/brand/x.png`), no una ruta del
+  // disco: se sirve por un route handler. Antes se resolvia tal cual contra el
+  // directorio de trabajo, lo que solo funcionaba porque la ruta publica y la
+  // del disco coincidian por casualidad. Se toma el nombre y se busca donde
+  // los logos viven de verdad.
+  const fileName = path.basename(logoUrl);
+  if (!fileName || fileName !== logoUrl.split("/").pop()) {
+    throw new Error("LOGO_PATH_OUTSIDE_STORAGE");
+  }
+  let candidate: string;
+  try {
+    candidate = uploadPath("brand", fileName);
+  } catch {
     throw new Error("LOGO_PATH_OUTSIDE_STORAGE");
   }
   try {

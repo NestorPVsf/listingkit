@@ -320,6 +320,12 @@ test.describe("Flujo completo de usuario por la UI — InmoContent OS", () => {
       page,
       editedPieceKey,
     );
+    // El enlace apunta al artefacto CONCRETO (`/api/generated-pieces/<id>/…`),
+    // asi que al regenerar cambia. Se guarda para saber cuando la pantalla ya
+    // refleja la version nueva — ver el porque unas lineas mas abajo.
+    const enlaceEditadaAntes = await page
+      .getByTestId(`download-${editedPieceKey}`)
+      .getAttribute("href");
 
     await page.getByTestId(`edit-piece-${editedPieceKey}`).click();
     await page
@@ -373,6 +379,23 @@ test.describe("Flujo completo de usuario por la UI — InmoContent OS", () => {
     expect(estadoFinal, "la regeneracion no debe acabar en error").not.toBe(
       "error",
     );
+
+    // Que el TRABAJO haya terminado no significa que la PANTALLA lo sepa: el
+    // enlace de descarga se refresca por sondeo del cliente y sigue apuntando
+    // unos instantes al artefacto anterior. `downloadArtifactBuffer` lee ese
+    // href del DOM, asi que descargaba el fichero viejo y la comparacion de
+    // bytes salia "identico" — el test acusaba al codigo de no regenerar.
+    //
+    // Solo fallaba con los dos workers peleandose por la CPU, que es cuando el
+    // sondeo tarda mas. Se espera a que la interfaz apunte al artefacto nuevo,
+    // que ademas es la condicion que el test queria comprobar de verdad.
+    await expect
+      .poll(
+        async () =>
+          page.getByTestId(`download-${editedPieceKey}`).getAttribute("href"),
+        { timeout: 30_000, intervals: [250] },
+      )
+      .not.toBe(enlaceEditadaAntes);
 
     const untouchedDownloadAfter = await downloadArtifactBuffer(
       page,

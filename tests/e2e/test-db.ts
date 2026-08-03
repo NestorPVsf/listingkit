@@ -32,3 +32,11 @@ export const E2E_PROD_DATABASE_URL = "file:./prisma/test-prod.db";
  */
 export const E2E_DEV_OUTPUT_DIR = "output-test-dev";
 export const E2E_PROD_OUTPUT_DIR = "output-test-prod";
+
+/**
+ * Y las subidas, por la misma razon y con mas motivo: `output/` guarda copias
+ * regenerables, `uploads/` guarda las FOTOS que subio la agencia. Un test que
+ * limpie de mas aqui se lleva material que no se puede volver a generar.
+ */
+export const E2E_DEV_UPLOADS_DIR = "uploads-test-dev";
+export const E2E_PROD_UPLOADS_DIR = "uploads-test-prod";
