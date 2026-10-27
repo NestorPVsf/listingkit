@@ -154,3 +154,5 @@ proceso, no solo lo afirma.
 Esto es un proyecto personal, abierto bajo MIT para que lo cojas y lo adaptes
 sin pedir permiso. Si quieres esto mismo montado para tu agencia, con tu
 marca y tus flujos, o cualquier otra cosa a medida: **info@podervsfuerza.com**
+
+Más sobre mi trabajo: [nestormartinez.dev](https://www.nestormartinez.dev)
